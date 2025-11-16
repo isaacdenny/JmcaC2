@@ -1,13 +1,29 @@
 ﻿using System.Net;
+using System.Numerics;
 
 namespace JmcaC2
 {
+    // prim constrcutor
+    public class BeaconClient(IPAddress clientIP, DateTime lastCheckInTime)
+    {
+
+        // parameterized constructor
+        public IPAddress ClientIP { get; init; } = clientIP;
+        public DateTime LastCheckInTime { get; set; } = lastCheckInTime;
+        public override string ToString()
+        {
+            TimeSpan CheckInTime = DateTime.Now - LastCheckInTime;
+            return $"{ClientIP} | {CheckInTime.Days}d {CheckInTime.Hours}h {CheckInTime.Minutes}m {CheckInTime.Seconds}s";
+        }
+    }
     public class Program
     {
         static HttpListener listener = new HttpListener();
         static bool programRunning = true;
         static bool serverRunning = true;
         static int port = 27015;
+
+        static List<BeaconClient> Clients = new List<BeaconClient>();
 
         public static void Main(string[] args)
         {
@@ -60,6 +76,9 @@ namespace JmcaC2
                             Console.WriteLine("Server is already running");
                         }
                         break;
+                    case "listeners":
+                        ViewConnections();
+                        break;
                     case "stop":
                         serverRunning = false;
                         listener.Stop();
@@ -79,6 +98,24 @@ namespace JmcaC2
         }
 
 
+        // View currently active beacon connections
+        public static void ViewConnections()
+        {
+            if (Clients == null)
+            {
+                Console.WriteLine("No Active Connections!");
+                return;
+            }
+
+            foreach (BeaconClient Client in Clients)
+            {
+
+                Console.WriteLine("Client IP | Last CheckIn");
+                Console.WriteLine(Client);
+
+                // TODO: MAKE RED if configured last-checkin time > sleep time 
+            }
+        }
         // Handle incoming HTTP connections
         // GET requests are for beacon tasks
         // POST requests are for task results
@@ -103,6 +140,9 @@ namespace JmcaC2
                         var output = response.OutputStream;
                         output.Write(buffer, 0, buffer.Length);
                         output.Close();
+
+                        Clients.Add(new BeaconClient(request.RemoteEndPoint.Address, DateTime.Now));
+
                     }
                     else if (request.HttpMethod == "POST")
                     {
