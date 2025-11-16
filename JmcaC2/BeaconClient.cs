@@ -8,8 +8,8 @@ namespace JmcaC2
 
         // parameterized constructor
         public IPAddress ClientIP { get; init; } = clientIP;
-        public string Name { get; init; } = clientName;
         public DateTime LastCheckInTime { get; set; } = lastCheckInTime;
+        public string Name { get; init; } = clientName;
 
         // public string ClientID 
 

