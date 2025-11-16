@@ -2,19 +2,6 @@
 
 namespace JmcaC2
 {
-    // prim constrcutor
-    public class BeaconClient(IPAddress clientIP, DateTime lastCheckInTime)
-    {
-
-        // parameterized constructor
-        public IPAddress ClientIP { get; init; } = clientIP;
-        public DateTime LastCheckInTime { get; set; } = lastCheckInTime;
-        public override string ToString()
-        {
-            TimeSpan CheckInTime = DateTime.Now - LastCheckInTime;
-            return $"{ClientIP} | {CheckInTime.Days}d {CheckInTime.Hours}h {CheckInTime.Minutes}m {CheckInTime.Seconds}s";
-        }
-    }
     public class Program
     {
         static HttpListener listener = new HttpListener();
@@ -106,10 +93,10 @@ namespace JmcaC2
                 return;
             }
 
+            Console.WriteLine($"{"Client IP",-15} | {"Last CheckIn",-20}");
             foreach (BeaconClient Client in Clients)
             {
 
-                Console.WriteLine("Client IP | Last CheckIn");
                 Console.WriteLine(Client);
 
                 // TODO: MAKE RED if configured last-checkin time > sleep time 
