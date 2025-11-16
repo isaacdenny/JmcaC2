@@ -21,7 +21,7 @@
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_TCP_PORT \
     "27015"  // TODO should be configureable but for dev hardcode to MSDN
-#define HTTP_SERVER_IP L"10.240.244.195"
+#define HTTP_SERVER_IP L"localhost"
 #define RESOURCE_NAME L"task.txt"
 #define HTTP_VERB L"GET"
 #define HTTP_SERVER_PORT 27015  // We coult just use INTERNET_DEFAULT_PORT
@@ -33,6 +33,7 @@ const wchar_t* ACCEPTED_MIME_TYPES[] = {
 
 int CreateTCPConn();
 int getHTTPTask();
+int sendHTTPTaskResult();
 
 int getHTTPTask() {
     // TODO: This should be HTTPS but I'm using HTTP as a starting point
