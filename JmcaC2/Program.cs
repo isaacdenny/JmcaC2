@@ -227,17 +227,16 @@ namespace JmcaC2
 
 
                         string responseString = "No Tasks";
-                        if (BeaconTasks.Count > 0)
-                        {
+                        // if (BeaconTasks.Count > 0)
+                        // {
+                        // foreach (BeaconTask CurrentTask in BeaconTasks)
+                        // {
+                        // CurrentTask.CmdPrefix + CurrentTask.CmdArgs;
 
-                            foreach (BeaconTask BeaconTask in BeaconTasks)
-                            {
-                                Console.WriteLine(BeaconTask);
+                        // }
 
-                            }
-
-
-                        }
+                        // }
+                        // TODO HANDLE PUSHING TASKS
                         byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
                         response.ContentLength64 = buffer.Length;
 
