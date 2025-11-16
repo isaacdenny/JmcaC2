@@ -32,11 +32,14 @@ namespace JmcaC2
             while (programRunning)
             {
                 Console.Write("JmcaC2> ");
-                string cmd = Console.ReadLine().Trim();
+                // According to documentation it will return null only if you press CTRL + Z.
+                string? cmd = Console.ReadLine();
                 if (string.IsNullOrEmpty(cmd))
                 {
                     continue; // ignore empty commands
                 }
+
+                cmd = cmd.Trim();
 
                 // process command
                 switch (cmd)
@@ -114,7 +117,7 @@ namespace JmcaC2
                         response.Close();
                     }
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     // exception handling request
                     Console.WriteLine("Error handling connection: " + e.Message);

