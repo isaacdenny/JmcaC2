@@ -1,6 +1,7 @@
 ﻿namespace JmcaC2
 {
-    public enum TaskStatus { 
+    public enum TaskStatus
+    {
         NotStarted,
         InProgress,
         Completed

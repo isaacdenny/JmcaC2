@@ -119,6 +119,7 @@ namespace JmcaC2
         // View currently active beacon connections
 
 
+
         static private string GenerateClientName()
         {
 
@@ -201,15 +202,15 @@ namespace JmcaC2
         }
 
 
+
         public static void PrintTasks()
         {
             Console.WriteLine($"{"Client Name",-15} | {"Task Name",-14} | {"Task Args",-20}");
             Console.WriteLine("---------------------------------------------------------------");
 
             foreach (var task in BeaconTasks)
-                Console.WriteLine(task);
+                Console.WriteLine($"{task,-15}");
         }
-
 
         // Handle incoming HTTP connections
         // GET requests are for beacon tasks

