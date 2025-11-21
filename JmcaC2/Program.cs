@@ -28,7 +28,7 @@ namespace JmcaC2
             //     2b. accept post requests for task results
             //   3. accept stdin commands to add tasks, view results, etc.
 
-            Console.WriteLine("Welcome to JmcaC2 Controller");
+            Console.WriteLine("Welcome to JmcaC2 Controller 🇯🇲");
 
             // setup the http listener
             listener.Prefixes.Add($"http://localhost:{port}/");
@@ -118,6 +118,7 @@ namespace JmcaC2
 
         // View currently active beacon connections
 
+        static private string InitiateHTTPSConnection(){}
 
         static private string GenerateClientName()
         {
