@@ -13,6 +13,8 @@
 #include <winioctl.h>
 #include <ws2tcpip.h>
 #include <iostream>
+#include <filesystem>
+#include <fstream>
 
 #include <string>
 
@@ -26,10 +28,8 @@
 
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PS_BUFLEN 4096
-#define DEFAULT_TCP_PORT \
-    "27015"  // TODO should be configureable but for dev hardcode to MSDN
+#define DEFAULT_TCP_PORT "27016"  // Should be configureable
 #define HTTP_SERVER_IP L"localhost"
 #define RESOURCE_NAME L"/"
-#define HTTP_SERVER_PORT 27015  // We coult just use INTERNET_DEFAULT_PORT
-
+#define HTTP_SERVER_PORT 27015  // Should be configureable
 #endif
