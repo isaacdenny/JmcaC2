@@ -18,7 +18,6 @@ mono_crash.*
 
 main.exe
 main.obj
-.vscode/
 
 # Build results
 [Dd]ebug/
