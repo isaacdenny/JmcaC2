@@ -28,8 +28,8 @@
 
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PS_BUFLEN 4096
-#define DEFAULT_TCP_PORT "27016"  // Should be configureable
-#define HTTP_SERVER_IP L"localhost"
+#define DEFAULT_TCP_PORT "27016" // Should be configureable
+#define HTTP_SERVER_IP L"192.168.1.100"
 #define RESOURCE_NAME L"/"
-#define HTTP_SERVER_PORT 27015  // Should be configureable
+#define HTTP_SERVER_PORT 27015 // Should be configureable
 #endif

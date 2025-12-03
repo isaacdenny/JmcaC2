@@ -445,6 +445,7 @@ string runPSCommand(string command)
 
 int main(int argc, const char **argv)
 {
+    std::cout << "RUNNNING MAIN";
     // Run all checks
     // BOOL cpuOK = checkCPU();
     // BOOL ramOK = checkRAM();
