@@ -32,7 +32,7 @@ namespace JmcaC2
             Console.WriteLine("Welcome to JmcaC2 Controller 🇯🇲");
 
             // setup the http listener
-            listener.Prefixes.Add($"https://localhost:{port}/");
+            listener.Prefixes.Add($"https://192.168.1.100:{port}/");
             listener.Start();
 
             Console.WriteLine($"HTTP Server started on port {port}");
