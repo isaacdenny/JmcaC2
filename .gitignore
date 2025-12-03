@@ -16,8 +16,10 @@
 # Mono auto generated files
 mono_crash.*
 
-main.exe
+*.exe
 main.obj
+
+.vscode/
 
 # Build results
 [Dd]ebug/
