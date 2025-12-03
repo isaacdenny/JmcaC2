@@ -28,8 +28,23 @@
 
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PS_BUFLEN 4096
-#define DEFAULT_TCP_PORT "27016"  // Should be configureable
+
+// to set the port at compile time, use: 
+// g++ ... -DREMOTEPORT="8080"
+#ifndef REMOTEPORT
+#define HTTP_SERVER_PORT 27016
+#else
+#define HTTP_SERVER_PORT REMOTEPORT
+#endif
+
+
+// to use the remote ip at compile time, use: 
+// g++ ... -DREMOTEIP
+#ifndef REMOTEIP
 #define HTTP_SERVER_IP L"localhost"
+#else
+#define HTTP_SERVER_IP L"192.168.1.100"
+#endif
+
 #define RESOURCE_NAME L"/"
-#define HTTP_SERVER_PORT 27015  // Should be configureable
 #endif
