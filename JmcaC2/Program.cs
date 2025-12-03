@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 
 namespace JmcaC2
@@ -101,6 +102,9 @@ namespace JmcaC2
                     case "enumservices":
                         CreateTask(CmdPrefix, CmdArgs);
                         break;
+                    case "sleep":
+                        CreateTask(CmdPrefix, CmdArgs);
+                        break;
 
                     case "screenshot":
                         CreateTask(CmdPrefix, CmdArgs);
@@ -118,6 +122,7 @@ namespace JmcaC2
 
 
         // View currently active beacon connections
+
 
         static private void CreateTask(string CmdPrefix, string CmdArgs)
         {

