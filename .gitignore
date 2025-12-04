@@ -20,6 +20,7 @@ mono_crash.*
 main.obj
 
 .vscode/
+uploads/
 
 # Build results
 [Dd]ebug/

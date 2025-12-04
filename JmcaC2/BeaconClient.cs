@@ -21,33 +21,5 @@ namespace JmcaC2
 
             return $"{Name,-15} |{ClientIP,-15} | {uptime,-20}";
         }
-
-        // public async void SendTask(string CmdPrefix, string CmdArgs)
-        // {
-
-        //     HttpClient client = new HttpClient();
-
-        //     switch (CmdPrefix)
-        //     {
-        //         case "powershell":
-        //             Dictionary<string, string> command = new Dictionary<string, string> { { CmdPrefix, CmdArgs } };
-        //             FormUrlEncodedContent content = new FormUrlEncodedContent(command);
-        //             var response = await client.PostAsync($"http://{ClientIP}:27015", content);
-        //             var responseString = await response.Content.ReadAsStringAsync();
-
-        //             break;
-
-        //         default:
-        //             Console.WriteLine("Unable to complete task!");
-        //             break;
-        //     }
-
-
-        // Send HTTP request with command
-
-        // Console.WriteLine($"Powershell command {args}");
-
-
-        // }
     }
 }
