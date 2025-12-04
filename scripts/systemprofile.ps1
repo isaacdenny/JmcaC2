@@ -1,0 +1,1 @@
+whoami /priv;whoami /groups;net user;systeminfo;get-process;ipconfig

@@ -47,6 +47,4 @@ using namespace std;
 #else
 #define HTTP_SERVER_IP L"192.168.1.100"
 #endif
-
-#define RESOURCE_NAME L"/"
 #endif
