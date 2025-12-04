@@ -16,7 +16,7 @@ namespace JmcaC2
 
         static List<BeaconClient> Beacons = new List<BeaconClient>();
         static List<BeaconTask> BeaconTasks = new List<BeaconTask>();
-
+        static Dictionary<int, BeaconTask> BeaconTasksMap = new Dictionary<int, BeaconTask>();
         static BeaconClient? CurrentBeacon = null;
         static HashSet<string> ClientNames = new HashSet<string>();
 
@@ -221,7 +221,9 @@ namespace JmcaC2
                 Console.ForegroundColor = ConsoleColor.White;
                 return;
             }
-            BeaconTasks.Add(new BeaconTask(CurrentBeacon.Name, taskIdx, CmdPrefix, CmdArgs));
+            BeaconTask task = new BeaconTask(CurrentBeacon.Name, taskIdx, CmdPrefix, CmdArgs);
+            BeaconTasks.Add(task);
+            BeaconTasksMap.Add(task.Index, task);
             Console.WriteLine($"Added task #{taskIdx} for {CurrentBeacon.Name}");
             taskIdx++;
         }
@@ -394,9 +396,15 @@ namespace JmcaC2
                         // Handle POST request for task results
                         Console.WriteLine($"Received POST request for task results");
                         string? taskIdx = context.Request.Headers["Task-Index"];
+                        BeaconTask? task = null; 
                         if (taskIdx != null)
                         {
                             Console.WriteLine($"Task #{taskIdx} Results");
+                            if (BeaconTasksMap.TryGetValue(Convert.ToInt32(taskIdx), out task))
+                            {
+                                task.Status = TaskStatus.Completed;
+                            }
+
                         }
 
                         if (context.Request.Url!.OriginalString.Contains("upload"))
@@ -430,7 +438,13 @@ namespace JmcaC2
                             {
                                 Directory.CreateDirectory("uploads");
                             }
-                            File.WriteAllBytes("uploads\\" + fileName, bytes);
+                            // write out the data file
+                            File.WriteAllBytes("uploads\\" + fileName + ".data", bytes);
+
+                            // write out the report file for the task
+                            if (task != null) {
+                                File.WriteAllText("uploads\\" + fileName + ".report", task.ToString() + "\n Data file: uploads\\" + fileName + ".data");
+                            }
                         }
                         else
                         {
