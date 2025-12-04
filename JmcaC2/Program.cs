@@ -35,15 +35,15 @@ namespace JmcaC2
             Console.WriteLine("Welcome to JmcaC2 Controller 🇯🇲");
 
             // set the scripts path via arg
-            if (args.Length > 1)
+            if (args.Length >= 1)
             {
-                if (!Directory.Exists(args[0]))
+                if (!Directory.Exists(args[1]))
                 {
-                    Console.WriteLine("Invalid scripts path: " + args[0]);
+                    Console.WriteLine("Invalid scripts path: " + args[1]);
                 }
                 else
                 {
-                    scriptsPath = args[0];
+                    scriptsPath = args[1];
                 }
             }
 
@@ -297,7 +297,9 @@ namespace JmcaC2
                                  b.Name == CurrentBeacon.Name;
 
                 if (isCurrent)
+                {
                     Console.ForegroundColor = ConsoleColor.DarkCyan;
+                }
 
                 Console.WriteLine(b.ToString());
 
