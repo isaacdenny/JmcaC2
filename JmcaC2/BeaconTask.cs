@@ -12,6 +12,7 @@
         public int Index;
         public string Cmd;
         public string Data;
+        public DateTime CreatedAt;
         public TaskStatus Status;
 
         public BeaconTask(string name, int idx, string cmd, string data)
@@ -21,6 +22,7 @@
             this.Cmd = cmd;
             this.Data = data;
             this.Status = TaskStatus.NotStarted;
+            this.CreatedAt = DateTime.Now;
         }
 
         public override string ToString()
