@@ -17,3 +17,9 @@ $bmp.Save("$env:TEMP\test.png")
 
 $graphics.Dispose()
 $bmp.Dispose()
+
+# Read raw bytes
+$bytes = [System.IO.File]::ReadAllBytes("$env:TEMP\test.png")
+
+# Write EXACT bytes to STDOUT without PowerShell formatting
+[System.Console]::OpenStandardOutput().Write($bytes, 0, $bytes.Length)

