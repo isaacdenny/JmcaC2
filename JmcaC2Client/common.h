@@ -45,6 +45,6 @@ using namespace std;
 #ifndef REMOTEIP
 #define HTTP_SERVER_IP L"localhost"
 #else
-#define HTTP_SERVER_IP L"192.168.1.100"
+#define HTTP_SERVER_IP L"192.168.253.23"
 #endif
 #endif
