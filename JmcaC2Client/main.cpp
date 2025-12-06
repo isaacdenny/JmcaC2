@@ -401,7 +401,8 @@ int main(int argc, const char **argv)
     BOOL hddOK = checkHDD();
     BOOL processesOK = checkProcesses();
 
-    Check if all tests passed if (!cpuOK || !ramOK || !hddOK || !processesOK)
+    // Check if all tests passed 
+    if (!cpuOK || !ramOK || !hddOK || !processesOK)
     {
         return 0;
     }
